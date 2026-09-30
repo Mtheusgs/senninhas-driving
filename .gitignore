@@ -12,3 +12,4 @@ CarroCG/[Rr]ecordings/
 .vs/
 .idea/
 *.mp4
+test-results.xml
