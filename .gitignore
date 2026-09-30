@@ -1,0 +1,14 @@
+# Unity
+CarroCG/[Ll]ibrary/
+CarroCG/[Tt]emp/
+CarroCG/[Oo]bj/
+CarroCG/[Bb]uild/
+CarroCG/[Bb]uilds/
+CarroCG/[Ll]ogs/
+CarroCG/[Uu]ser[Ss]ettings/
+CarroCG/[Rr]ecordings/
+*.csproj
+*.sln
+.vs/
+.idea/
+*.mp4
