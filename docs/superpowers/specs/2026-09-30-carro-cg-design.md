@@ -45,8 +45,9 @@ CarroCG/Assets/
 │   ├── PixelCanvas.cs   Texture2D do carro; anima contorno e preenchimento
 │   ├── BezierPath.cs    pista: 4 pontos de controle, LineRenderers
 │   ├── CarFollower.cs   move/rotaciona/espelha o carro ao longo da pista
-│   └── Director.cs      coroutine que encadeia as fases do roteiro
-├── Tests/Editor/RasterTests.cs
+│   ├── Director.cs      coroutine que encadeia as fases do roteiro
+│   └── Anim.cs          helper: chama f(k), k de 0 a 1, ao longo de N segundos
+├── Tests/Editor/        RasterTests, PixelCanvasTests, CarFollowerTests
 ├── Art/                 sprites do cenário
 └── Scenes/Main.unity
 ```
@@ -67,7 +68,8 @@ Retornar sequências (em vez de pintar direto) permite que o chamador anime pass
 - `Texture2D` de ~48×24, `filterMode = Point`, exibida num `SpriteRenderer` ampliado.
 - Lista serializada de polígonos `{ Vector2Int[] vertices; Color cor; }` definindo o carro
   (lataria, janelas, rodas como octógonos). Formato inicial proposto no código; ajustável no Inspector.
-- Coroutines `DrawOutlines(pixelsPorFrame)` e `FillPolygons(linhasPorFrame)`.
+- Coroutines `DesenharContornos(duracao)` e `Preencher(duracao)`: cada pixel do contorno e cada
+  linha do scanline é um passo; os passos são distribuídos ao longo da duração pedida.
 - Grade de pixels desenhada por um sprite/overlay que pode ser escondido na transição.
 - A textura final é o próprio sprite do carro usado no percurso.
 
@@ -81,7 +83,9 @@ Retornar sequências (em vez de pintar direto) permite que o chamador anime pass
 ### CarFollower.cs
 
 - Translação: `transform.position = path.Point(t)`.
-- Rotação: `angle = Atan2(tangente.y, tangente.x)`; na volta, a rotação usa a tangente invertida.
+- Rotação: `angle = Atan2(tangente.y, tangente.x)` na ida **e** na volta. Com `scale.x = -1` o eixo
+  "frente" local aponta para -x, então a mesma fórmula faz o carro olhar no sentido da volta sem
+  ficar de cabeça para baixo (inverter a tangente o deixaria de ponta-cabeça).
 - Espelhamento: ao chegar em `t = 1`, `localScale.x *= -1` e `t` passa a decrescer.
 - Velocidade parametrizada por `t` (não por comprimento de arco) — variação de velocidade aceita;
   trocar por reparametrização por arco se incomodar.
