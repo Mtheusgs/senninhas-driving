@@ -36,6 +36,21 @@ public class PixelCanvasTests
     }
 
     [Test]
+    public void PoligonoPosterior_CobreContornoDoAnterior()
+    {
+        // lataria com a borda inferior em y=4; roda desenhada depois, atravessada por essa borda
+        var lataria = new PixelCanvas.Poly { nome = "lataria", cor = Color.red,
+            vertices = new Vector2Int[] { new(1, 4), new(8, 4), new(8, 8), new(1, 8) } };
+        var roda = new PixelCanvas.Poly { nome = "roda", cor = Color.blue,
+            vertices = new Vector2Int[] { new(2, 1), new(7, 1), new(7, 7), new(2, 7) } };
+        var c = Novo(lataria, roda);
+        Rodar(c.DesenharContornos(0));
+        Rodar(c.Preencher(0));
+        Assert.AreEqual(Color.blue, c.Textura.GetPixel(4, 4), "roda cobre a borda da lataria");
+        Assert.AreEqual(Color.black, c.Textura.GetPixel(2, 4), "contorno da própria roda fica");
+    }
+
+    [Test]
     public void ForaDaTextura_NaoLancaEPreencheDentro()
     {
         var c = Novo(Quadrado(-2, 12, Color.red));

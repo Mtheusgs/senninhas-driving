@@ -17,7 +17,7 @@ public class PixelCanvas : MonoBehaviour
     public Poly[] poligonos = CarroPadrao();
 
     Texture2D tex;
-    bool[] contorno;
+    int[] dono;   // 0 = sem contorno; n = contorno do polígono de índice n-1
     SpriteRenderer grade;
 
     public Texture2D Textura => tex;
@@ -30,7 +30,7 @@ public class PixelCanvas : MonoBehaviour
             { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
         tex.SetPixels32(new Color32[largura * altura]);   // tudo transparente
         tex.Apply();
-        contorno = new bool[largura * altura];
+        dono = new int[largura * altura];
         var pivo = new Vector2(0.5f, 2f / altura);          // base das rodas: o carro "anda" sobre a pista
         GetComponent<SpriteRenderer>().sprite =
             Sprite.Create(tex, new Rect(0, 0, largura, altura), pivo, pixelsPorUnidade);
@@ -65,30 +65,36 @@ public class PixelCanvas : MonoBehaviour
     public IEnumerator DesenharContornos(float duracao)
     {
         var passos = new List<System.Action>();
-        foreach (var p in poligonos)
-            for (int i = 0; i < p.vertices.Length; i++)
-                foreach (var px in Raster.Line(p.vertices[i], p.vertices[(i + 1) % p.vertices.Length]))
+        for (int n = 0; n < poligonos.Length; n++)
+        {
+            var v = poligonos[n].vertices;
+            int id = n + 1;
+            for (int i = 0; i < v.Length; i++)
+                foreach (var px in Raster.Line(v[i], v[(i + 1) % v.Length]))
                     if (Dentro(px.x, px.y))
                         passos.Add(() =>
                         {
-                            contorno[px.y * largura + px.x] = true;
+                            dono[px.y * largura + px.x] = id;
                             tex.SetPixel(px.x, px.y, corContorno);
                         });
+        }
         return Executar(passos, duracao);
     }
 
-    // Preenchimento: cada linha de scanline de cada polígono é um passo. Não pinta por cima do contorno.
+    // Preenchimento: cada linha de scanline de cada polígono é um passo.
+    // Não pinta sobre o próprio contorno nem sobre o de polígonos posteriores; cobre o de anteriores (ex.: roda sobre a lataria).
     public IEnumerator Preencher(float duracao)
     {
         var passos = new List<System.Action>();
-        foreach (var p in poligonos)
+        for (int n = 0; n < poligonos.Length; n++)
         {
-            var cor = p.cor;
-            foreach (var (y, x0, x1) in Raster.ScanlineSpans(p.vertices))
+            var cor = poligonos[n].cor;
+            int id = n + 1;
+            foreach (var (y, x0, x1) in Raster.ScanlineSpans(poligonos[n].vertices))
                 passos.Add(() =>
                 {
                     for (int x = x0; x <= x1; x++)
-                        if (Dentro(x, y) && !contorno[y * largura + x]) tex.SetPixel(x, y, cor);
+                        if (Dentro(x, y) && dono[y * largura + x] < id) tex.SetPixel(x, y, cor);
                 });
         }
         return Executar(passos, duracao);
