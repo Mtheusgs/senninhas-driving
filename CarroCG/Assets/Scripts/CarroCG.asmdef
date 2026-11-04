@@ -1,3 +1,4 @@
 {
-    "name": "CarroCG"
+    "name": "CarroCG",
+    "references": ["Unity.TextMeshPro"]
 }
