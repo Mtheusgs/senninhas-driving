@@ -55,6 +55,7 @@ public class PixelCanvas : MonoBehaviour
         }
         grade.sprite = Sprite.Create(g, new Rect(0, 0, g.width, g.height), pivo, pixelsPorUnidade * k);
         grade.sortingOrder = GetComponent<SpriteRenderer>().sortingOrder + 1;
+        grade.sharedMaterial = GetComponent<SpriteRenderer>().sharedMaterial;
     }
 
     public void MostrarGrade(bool visivel) => grade.enabled = visivel;

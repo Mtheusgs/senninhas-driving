@@ -9,12 +9,16 @@ public static class MontarCena
     const string Cena = "Assets/Scenes/Main.unity";
     const float Zoom = 6.75f;   // 1080 / (2 * 6.75) = 80 px por unidade = 5 px por pixel do carro (16 px/unidade)
 
+    // URP 2D: material sem iluminação, a cena do vídeo não tem luzes 2D.
+    static Material Unlit => AssetDatabase.LoadAssetAtPath<Material>(
+        "Packages/com.unity.render-pipelines.universal/Runtime/Materials/Sprite-Unlit-Default.mat");
+
     [MenuItem("CarroCG/Montar Cena")]
     public static void Executar()
     {
         ConfigurarSprites();
         var cena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-        var matLinha = AssetDatabase.GetBuiltinExtraResource<Material>("Sprites-Default.mat");
+        var matLinha = Unlit;
         var quadrado = CarregarSprite("Assets/Art/Gerado/quadrado.png");
         var circulo = CarregarSprite("Assets/Art/Gerado/circulo.png");
 
@@ -57,7 +61,9 @@ public static class MontarCena
 
         // Carro
         var carro = new GameObject("Carro", typeof(SpriteRenderer));
-        carro.GetComponent<SpriteRenderer>().sortingOrder = 3;
+        var srCarro = carro.GetComponent<SpriteRenderer>();
+        srCarro.sortingOrder = 3;
+        srCarro.sharedMaterial = Unlit;
         var canvas = carro.AddComponent<PixelCanvas>();
         var follower = carro.AddComponent<CarFollower>();
         follower.pista = bezier;
@@ -93,6 +99,7 @@ public static class MontarCena
         var r = new GameObject(nome).AddComponent<SpriteRenderer>();
         r.transform.SetParent(pai, false);
         r.sprite = sprite;
+        r.sharedMaterial = Unlit;
         r.sortingOrder = ordem;
         return r;
     }
@@ -110,7 +117,7 @@ public static class MontarCena
     // Pixel art: filtro Point, sem compressão, malha retangular (evita frestas entre tiles).
     static void ConfigurarSprites()
     {
-        foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art" }))
+        foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/Kenney", "Assets/Art/Gerado" }))
         {
             var caminho = AssetDatabase.GUIDToAssetPath(guid);
             var imp = (TextureImporter)AssetImporter.GetAtPath(caminho);
