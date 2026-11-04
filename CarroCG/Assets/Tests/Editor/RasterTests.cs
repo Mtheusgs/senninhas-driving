@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -95,5 +96,52 @@ public class RasterTests
         var t = Raster.BezierTangent(A, B, C, D, 0);
         Assert.AreEqual(1f, Vector2.Dot(t.normalized, (B - A).normalized), 1e-5);
         Assert.AreEqual(3 * (B - A), t);
+    }
+
+    [Test]
+    public void BezierJoin_EmendaC1()
+    {
+        Vector2 a0 = new(0, 0), a1 = new(1, 2), a2 = new(3, 1), a3 = new(4, 0);
+        Vector2 b1 = Raster.BezierJoin(a2, a3), b2 = new(7, 3), b3 = new(9, 1);
+        Assert.AreEqual(new Vector2(5, -1), b1);
+        Assert.AreEqual(Raster.BezierTangent(a0, a1, a2, a3, 1), Raster.BezierTangent(a3, b1, b2, b3, 0));
+    }
+
+    static readonly Rect Janela = new(-1, -1, 3, 10);   // x ∈ [-1, 2], y ∈ [-1, 9]
+
+    static void AssertPontos(Vector2[] esperado, List<Vector2> obtido)
+    {
+        Assert.AreEqual(esperado.Length, obtido.Count, "quantidade de vértices");
+        for (int i = 0; i < esperado.Length; i++)
+        {
+            Assert.AreEqual(esperado[i].x, obtido[i].x, 1e-4, $"x do vértice {i}");
+            Assert.AreEqual(esperado[i].y, obtido[i].y, 1e-4, $"y do vértice {i}");
+        }
+    }
+
+    [Test]
+    public void Clip_TodoDentro_Inalterado()
+    {
+        var q = new Vector2[] { new(0, 0), new(1, 0), new(1, 1), new(0, 1) };
+        AssertPontos(q, Raster.ClipPolygon(q, Janela));
+    }
+
+    [Test]
+    public void Clip_TodoFora_Vazio()
+    {
+        Assert.IsEmpty(Raster.ClipPolygon(new Vector2[] { new(5, 5), new(6, 5), new(6, 6) }, Janela));
+    }
+
+    [Test]
+    public void Clip_TrianguloCortadoNaDireita()
+    {
+        var tri = new Vector2[] { new(0, 0), new(4, 0), new(0, 4) };
+        AssertPontos(new Vector2[] { new(0, 0), new(2, 0), new(2, 2), new(0, 4) }, Raster.ClipPolygon(tri, Janela));
+    }
+
+    [Test]
+    public void Clip_Vazio_Vazio()
+    {
+        Assert.IsEmpty(Raster.ClipPolygon(new List<Vector2>(), Janela));
     }
 }

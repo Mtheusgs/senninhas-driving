@@ -61,4 +61,40 @@ public static class Raster
         float u = 1 - t;
         return 3 * u * u * (p1 - p0) + 6 * u * t * (p2 - p1) + 3 * t * t * (p3 - p2);
     }
+
+    // Emenda C1 entre trechos: o 1º controle do novo trecho é o espelhamento do último controle
+    // do anterior em torno do ponto de junção.
+    public static Vector2 BezierJoin(Vector2 p2Anterior, Vector2 p3Anterior) => 2 * p3Anterior - p2Anterior;
+
+    // Recorte de polígono de Sutherland–Hodgman: recorta contra cada borda do retângulo, em sequência.
+    public static List<Vector2> ClipPolygon(IReadOnlyList<Vector2> poly, Rect r)
+    {
+        var p = new List<Vector2>(poly);
+        p = ClipBorda(p, v => v.x >= r.xMin, (a, b) => Corte(a, b, (r.xMin - a.x) / (b.x - a.x)));
+        p = ClipBorda(p, v => v.x <= r.xMax, (a, b) => Corte(a, b, (r.xMax - a.x) / (b.x - a.x)));
+        p = ClipBorda(p, v => v.y >= r.yMin, (a, b) => Corte(a, b, (r.yMin - a.y) / (b.y - a.y)));
+        p = ClipBorda(p, v => v.y <= r.yMax, (a, b) => Corte(a, b, (r.yMax - a.y) / (b.y - a.y)));
+        return p;
+    }
+
+    static Vector2 Corte(Vector2 a, Vector2 b, float t) => a + (b - a) * t;
+
+    // Uma borda: para cada aresta (anterior → atual), emite a interseção ao cruzar a borda e o vértice se estiver dentro.
+    static List<Vector2> ClipBorda(List<Vector2> entrada, System.Func<Vector2, bool> dentro,
+                                   System.Func<Vector2, Vector2, Vector2> intersecao)
+    {
+        var saida = new List<Vector2>();
+        for (int i = 0; i < entrada.Count; i++)
+        {
+            Vector2 atual = entrada[i], anterior = entrada[(i + entrada.Count - 1) % entrada.Count];
+            bool dAtual = dentro(atual), dAnterior = dentro(anterior);
+            if (dAtual)
+            {
+                if (!dAnterior) saida.Add(intersecao(anterior, atual));
+                saida.Add(atual);
+            }
+            else if (dAnterior) saida.Add(intersecao(anterior, atual));
+        }
+        return saida;
+    }
 }
