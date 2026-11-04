@@ -20,7 +20,7 @@ public class Terreno : MonoBehaviour
     public float ppu = 64;
     public int amostras = 64;
     public int trechosAFrente = 3;
-    public float profundidade = 12f;
+    public float profundidade = 18f;          // cobre a câmera no zoom máximo olhando para baixo
     public float alturaMaxJanela = 32f;
     public TerrenoChunk.Paleta paleta = new();
     public PhysicsMaterial2D materialChao;
@@ -28,6 +28,8 @@ public class Terreno : MonoBehaviour
     public readonly List<Chunk> chunks = new();
     public event System.Action<Chunk> TrechoCriado;
     public TerrenoGerador Gerador { get; private set; }
+
+    EdgeCollider2D parede;   // borda esquerda do mundo: acompanha o início do trecho mais antigo
 
     void Awake() => Reiniciar();
 
@@ -41,6 +43,12 @@ public class Terreno : MonoBehaviour
         foreach (var c in chunks) Liberar(c);
         chunks.Clear();
         Gerador = new TerrenoGerador(semente);
+        if (!parede)
+        {
+            parede = GetComponent<EdgeCollider2D>();
+            if (!parede) parede = gameObject.AddComponent<EdgeCollider2D>();
+            parede.points = new Vector2[] { new(0, -1000), new(0, 1000) };
+        }
     }
 
     // Mantém trechos até trechosAFrente larguras à frente de x e descarta os que ficaram uma largura para trás.
@@ -52,6 +60,7 @@ public class Terreno : MonoBehaviour
             Liberar(chunks[0]);
             chunks.RemoveAt(0);
         }
+        parede.offset = new Vector2(chunks[0].trecho.p0.x - transform.position.x, 0);
     }
 
     public Chunk GerarProximo()

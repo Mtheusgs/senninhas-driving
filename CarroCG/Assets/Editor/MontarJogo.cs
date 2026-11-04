@@ -46,7 +46,7 @@ public static class MontarJogo
         capacete.transform.localPosition = Capacete;
         var cc = capacete.AddComponent<CircleCollider2D>();
         cc.isTrigger = true;
-        cc.radius = 0.1f;
+        cc.radius = 0.3f;   // cobre capacete + halo: de teto no chão, passa da asa traseira (0,47) e encosta
         capacete.AddComponent<SensorCapacete>().f1 = f1;
 
         // Câmera
@@ -164,6 +164,7 @@ public static class MontarJogo
         canvas.renderMode = RenderMode.ScreenSpaceCamera;
         canvas.worldCamera = cam;
         canvas.planeDistance = 1;
+        canvas.sortingOrder = 100;          // por cima de carro (2-3) e moedas (1)
         var scaler = go.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
@@ -171,11 +172,17 @@ public static class MontarJogo
         var raiz = go.transform;
 
         var fundoBarra = Caixa("Combustivel", raiz, new Vector2(0, 1), new Vector2(40, -40), new Vector2(420, 34), new Color(0, 0, 0, 0.55f));
-        var barra = Caixa("Nivel", fundoBarra, Vector2.zero, Vector2.zero, Vector2.zero, new Color(1f, 0.55f, 0.1f));
+        // trilho com a margem; a barra dentro dele não tem margem, então com 0% fica com largura 0 (sem lasca)
+        var trilho = new GameObject("Trilho", typeof(RectTransform)).GetComponent<RectTransform>();
+        trilho.SetParent(fundoBarra, false);
+        trilho.anchorMin = Vector2.zero;
+        trilho.anchorMax = Vector2.one;
+        trilho.offsetMin = new Vector2(4, 4);
+        trilho.offsetMax = new Vector2(-4, -4);
+        var barra = Caixa("Nivel", trilho, Vector2.zero, Vector2.zero, Vector2.zero, new Color(1f, 0.55f, 0.1f));
         barra.anchorMin = Vector2.zero;
         barra.anchorMax = Vector2.one;
-        barra.offsetMin = new Vector2(4, 4);
-        barra.offsetMax = new Vector2(-4, -4);
+        barra.offsetMin = barra.offsetMax = Vector2.zero;
         p.barraCombustivel = barra;
 
         var caixaMoedas = Caixa("Moedas", raiz, new Vector2(0, 1), new Vector2(40, -90), new Vector2(260, 56), new Color(0, 0, 0, 0.45f));

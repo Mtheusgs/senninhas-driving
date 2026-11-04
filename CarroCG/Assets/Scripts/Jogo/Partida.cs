@@ -20,7 +20,7 @@ public class Partida : MonoBehaviour
     public int Moedas { get; private set; }
     public float Distancia { get; private set; }
 
-    const string ChaveRecorde = "recorde";
+    public static string ChaveRecorde = "recorde";   // os testes trocam por uma chave própria
     float x0;
 
     void OnEnable()

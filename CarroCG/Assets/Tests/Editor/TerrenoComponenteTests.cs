@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -48,5 +49,21 @@ public class TerrenoComponenteTests
         Assert.LessOrEqual(terreno.chunks.Count, terreno.trechosAFrente + 3);
         Assert.AreEqual(terreno.chunks.Count, terreno.transform.childCount, "trechos descartados ficaram na cena");
         Assert.Greater(terreno.chunks[0].trecho.p3.x, 2000 - 2 * terreno.Gerador.largura);
+    }
+    [Test]
+    public void Trecho_FundoCobreACameraNoZoomMaximo()
+    {
+        // câmera: zoomMax 11 + deslocamento 1,5 + olhar à frente até 4 → até ~16,5 abaixo do carro
+        var c = terreno.GerarProximo();
+        Assert.LessOrEqual(c.janela.yMin, c.curva.Min(p => p.y) - 17f);
+    }
+
+    [Test]
+    public void Parede_AcompanhaOInicioDoPrimeiroTrecho()
+    {
+        for (float x = 0; x <= 300; x += 5) terreno.Atualizar(x);
+        var parede = terreno.GetComponent<EdgeCollider2D>();
+        Assert.IsNotNull(parede, "sem parede na borda esquerda");
+        Assert.AreEqual(terreno.chunks[0].trecho.p0.x, parede.offset.x + terreno.transform.position.x, 1e-4);
     }
 }

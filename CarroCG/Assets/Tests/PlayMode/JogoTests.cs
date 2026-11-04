@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,6 +10,16 @@ public class JogoTests
 {
     F1 f1;
     Partida partida;
+
+    [SetUp]
+    public void RecordeDeTeste() => Partida.ChaveRecorde = "recorde-teste";
+
+    [TearDown]
+    public void RecordeReal()
+    {
+        PlayerPrefs.DeleteKey("recorde-teste");
+        Partida.ChaveRecorde = "recorde";
+    }
 
     IEnumerator Carregar()
     {
@@ -40,6 +51,7 @@ public class JogoTests
         yield return new WaitForSeconds(3);
         Assert.AreEqual(Partida.Estado.Fim, partida.EstadoAtual);
         Assert.IsTrue(partida.painelFim.activeSelf);
+        Assert.GreaterOrEqual(partida.barraCombustivel.rect.width, 0f, "barra vazia com largura negativa aparece como lasca");
     }
 
     [UnityTest]
@@ -62,6 +74,43 @@ public class JogoTests
         yield return null;
         Assert.AreEqual(1f, Time.timeScale);
         Assert.AreEqual(Partida.Estado.Jogando, Object.FindFirstObjectByType<Partida>().EstadoAtual);
+    }
+
+    [UnityTest]
+    public IEnumerator Hud_DesenhaPorCimaDoJogo()
+    {
+        yield return Carregar();
+        int maior = Object.FindObjectsByType<SpriteRenderer>(FindObjectsSortMode.None).Max(r => r.sortingOrder);
+        Assert.Greater(Object.FindFirstObjectByType<Canvas>().sortingOrder, maior);
+    }
+
+    [UnityTest]
+    public IEnumerator Re_NaoCaiDoMundo()
+    {
+        yield return Carregar();
+        f1.acelerador = -1;
+        yield return new WaitForSeconds(6);
+        Assert.Greater(f1.transform.position.y, -3f, "caiu pela borda esquerda do terreno");
+    }
+
+    [UnityTest]
+    public IEnumerator Terminar_NaoMexeNoRecordeReal()
+    {
+        bool tinha = PlayerPrefs.HasKey("recorde");
+        float antes = PlayerPrefs.GetFloat("recorde");
+        PlayerPrefs.SetFloat("recorde", 5);
+        try
+        {
+            yield return Carregar();
+            f1.acelerador = 1;
+            yield return new WaitForSeconds(3);
+            partida.Terminar("teste");
+            Assert.AreEqual(5f, PlayerPrefs.GetFloat("recorde"));
+        }
+        finally
+        {
+            if (tinha) PlayerPrefs.SetFloat("recorde", antes); else PlayerPrefs.DeleteKey("recorde");
+        }
     }
 
     // Só roda quando filtrado pelo nome (Tools/capturar.sh). Precisa de GPU.
