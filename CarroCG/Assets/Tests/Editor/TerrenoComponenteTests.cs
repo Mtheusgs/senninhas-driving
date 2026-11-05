@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -65,5 +66,39 @@ public class TerrenoComponenteTests
         var parede = terreno.GetComponent<EdgeCollider2D>();
         Assert.IsNotNull(parede, "sem parede na borda esquerda");
         Assert.AreEqual(terreno.chunks[0].trecho.p0.x, parede.offset.x + terreno.transform.position.x, 1e-4);
+    }
+    [Test]
+    public void Recorte_SempreCortaOFundo()
+    {
+        var c = terreno.GerarProximo();
+        Assert.Less(c.poligonoOriginal.Min(p => p.y), c.janela.yMin - 1f, "polígono original não passa da janela");
+        Assert.AreEqual(c.janela.yMin, c.poligonoRecortado.Min(p => p.y), 1e-3, "recortado não termina na borda da janela");
+    }
+
+    [Test]
+    public void Gerador_UsaOsParametrosDoComponente()
+    {
+        terreno.amplitudeInicial = 0.5f;
+        terreno.ganhoPorTrecho = 0.1f;
+        terreno.amplitudeMax = 1f;
+        terreno.Reiniciar();
+        Assert.AreEqual(0.5f, terreno.Gerador.amplitudeInicial);
+        Assert.AreEqual(0.1f, terreno.Gerador.ganhoPorTrecho);
+        Assert.AreEqual(1f, terreno.Gerador.amplitudeMax);
+    }
+
+    static void Rodar(IEnumerator e) { while (e.MoveNext()) { } }
+
+    [Test]
+    public void RepintarAnimado_ApagaETerminaIgual()
+    {
+        terreno.GerarProximo();
+        var c = terreno.GerarProximo();
+        var original = c.tex.GetPixels32();
+        int cheio = System.Array.FindIndex(original, p => p.a == 255);
+        var e = terreno.RepintarAnimado(c, 0);
+        Assert.AreEqual(0, c.tex.GetPixels32()[cheio].a, "não apagou antes de repintar");
+        Rodar(e);
+        CollectionAssert.AreEqual(original, c.tex.GetPixels32());
     }
 }

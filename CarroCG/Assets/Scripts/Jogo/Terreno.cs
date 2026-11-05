@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,6 +12,7 @@ public class Terreno : MonoBehaviour
         public int indice;
         public Vector2[] curva;
         public Rect janela;
+        public List<Vector2> poligonoOriginal, poligonoRecortado;   // antes e depois do Sutherland–Hodgman
         public GameObject go;
         public Texture2D tex;
     }
@@ -21,7 +23,8 @@ public class Terreno : MonoBehaviour
     public int amostras = 64;
     public int trechosAFrente = 3;
     public float profundidade = 18f;          // cobre a câmera no zoom máximo olhando para baixo
-    public float alturaMaxJanela = 32f;
+    public float fundoExtra = 40f;            // o polígono desce além da janela: o recorte sempre corta (modo aula)
+    public float amplitudeInicial = 2.5f, ganhoPorTrecho = 0.5f, amplitudeMax = 12f;
     public TerrenoChunk.Paleta paleta = new();
     public PhysicsMaterial2D materialChao;
 
@@ -42,7 +45,8 @@ public class Terreno : MonoBehaviour
     {
         foreach (var c in chunks) Liberar(c);
         chunks.Clear();
-        Gerador = new TerrenoGerador(semente);
+        Gerador = new TerrenoGerador(semente)
+            { amplitudeInicial = amplitudeInicial, ganhoPorTrecho = ganhoPorTrecho, amplitudeMax = amplitudeMax };
         if (!parede)
         {
             parede = GetComponent<EdgeCollider2D>();
@@ -69,10 +73,11 @@ public class Terreno : MonoBehaviour
         int indice = Gerador.Indice - 1;
         var curva = TerrenoGerador.Amostrar(t, amostras);
         float topo = curva.Max(p => p.y) + 0.5f;
-        float fundo = curva.Min(p => p.y) - profundidade;
-        var janela = Rect.MinMaxRect(t.p0.x, Mathf.Max(fundo, topo - alturaMaxJanela), t.p3.x, topo);
+        float baseJanela = curva.Min(p => p.y) - profundidade;
+        var janela = Rect.MinMaxRect(t.p0.x, baseJanela, t.p3.x, topo);
 
-        var poligono = Raster.ClipPolygon(TerrenoChunk.Poligono(curva, fundo), janela);          // recorte
+        var original = TerrenoChunk.Poligono(curva, baseJanela - fundoExtra);
+        var poligono = Raster.ClipPolygon(original, janela);                                       // recorte
         var px = TerrenoChunk.Pintar(poligono, janela, ppu, curva, paleta, out int w, out int h);   // preenchimento
 
         var tex = new Texture2D(w, h, TextureFormat.RGBA32, false)
@@ -89,10 +94,37 @@ public class Terreno : MonoBehaviour
         col.sharedMaterial = materialChao;
         if (chunks.Count > 0) Emendar(chunks[^1], go, col);
 
-        var c = new Chunk { trecho = t, indice = indice, curva = curva, janela = janela, go = go, tex = tex };
+        var c = new Chunk
+        {
+            trecho = t, indice = indice, curva = curva, janela = janela, go = go, tex = tex,
+            poligonoOriginal = original, poligonoRecortado = poligono,
+        };
         chunks.Add(c);
         TrechoCriado?.Invoke(c);
         return c;
+    }
+
+    // Modo aula: apaga o trecho e o repinta de baixo para cima, uma linha do scanline por vez, em tempo real
+    // (funciona com o jogo congelado). Os pixels vêm do mesmo preenchimento do trecho.
+    public IEnumerator RepintarAnimado(Chunk c, float duracao, System.Action<float> linhaAtual = null)
+    {
+        var px = TerrenoChunk.Pintar(c.poligonoRecortado, c.janela, ppu, c.curva, paleta, out int w, out int h);
+        c.tex.SetPixels32(new Color32[w * h]);
+        c.tex.Apply();
+        int feitas = 0;
+        return Anim.Durante(duracao, k =>
+        {
+            int alvo = Mathf.CeilToInt(k * h);
+            if (alvo > feitas)
+            {
+                var linhas = new Color32[(alvo - feitas) * w];
+                System.Array.Copy(px, feitas * w, linhas, 0, linhas.Length);
+                c.tex.SetPixels32(0, feitas, w, alvo - feitas, linhas);
+                c.tex.Apply();
+                feitas = alvo;
+            }
+            linhaAtual?.Invoke(c.janela.yMin + feitas / ppu);
+        }, tempoReal: true);
     }
 
     // Pontos vizinhos nas emendas: a roda passa de um collider para o outro sem "degrau".
