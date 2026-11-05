@@ -1,8 +1,11 @@
-"""Gera a arte HD do F1 (vista lateral, frente para +x), da roda e dos coletáveis.
-Uso: python3 -I Tools/gerar_f1.py CarroCG/Assets/Art/F1
-Coordenadas em pixels de uma tela 960x300, y para baixo. No Unity: PPU 256 (F1) e 200 (coletáveis).
-Layout usado pelo Editor/MontarJogo.cs: rodas em (190,178) e (770,178), raio 92; capacete em (515,92)."""
-import math, os, sys
+"""Gera a arte HD do F1 (vista lateral, frente para +x), da roda, dos coletáveis e do céu lunar.
+Uso: python3 -I Tools/gerar_f1.py CarroCG/Assets/Art
+Saídas em F1/: f1_atras.png, f1_pintura.png (cinza claro, tingida no Unity pela cor da garagem), f1_frente.png,
+f1_corpo.png (silhueta completa em vermelho, usada no collider), f1_roda.png, moeda.png, galao.png.
+Saídas em Ceu/: estrelas.png, terra.png.
+Coordenadas do F1 em pixels de 960x300, y para baixo. PPU 256 no Unity.
+Layout usado por Editor/MontagemComum.cs: rodas em (190,178) e (770,178), raio 92; capacete em (515,92)."""
+import math, os, random, sys
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 S = 4                                   # supersampling
@@ -11,6 +14,14 @@ RODA_R = 92
 VERMELHO, VERMELHO_ESC = (208, 26, 42, 255), (120, 12, 22, 255)
 BRANCO, PRETO, CINZA = (245, 245, 245, 255), (24, 24, 28, 255), (70, 72, 80, 255)
 AMARELO, OURO, OURO_ESC = (250, 204, 40, 255), (250, 196, 40, 255), (176, 124, 14, 255)
+BASE_PINTURA, CONTORNO_PINTURA = (215, 215, 215, 255), (95, 95, 95, 255)
+TINTA_VERMELHA = (247, 31, 50)          # base 215 x tinta = vermelho original (208, 26, 42)
+
+CHASSI = [(105, 205), (115, 150), (230, 134), (330, 126), (440, 118), (560, 116), (650, 126),
+          (770, 150), (880, 178), (935, 192), (935, 205)]
+COBERTURA = [(240, 136), (290, 78), (350, 56), (420, 58), (466, 96), (470, 122), (240, 138)]
+PLACA_TRASEIRA = [(58, 30), (84, 30), (96, 150), (70, 150)]
+PLACA_DIANTEIRA = [(930, 178), (956, 178), (956, 224), (930, 224)]
 
 def s(pts): return [(x * S, y * S) for x, y in pts]
 
@@ -31,50 +42,59 @@ def sombrear(img, mascara, y0, y1):
     return Image.alpha_composite(img, grad)
 
 def reduzir(img, w, h): return img.resize((w, h), Image.LANCZOS)
+def tela(): return Image.new('RGBA', (W * S, H * S))
 
-CHASSI = [(105, 205), (115, 150), (230, 134), (330, 126), (440, 118), (560, 116), (650, 126),
-          (770, 150), (880, 178), (935, 192), (935, 205)]
-COBERTURA = [(240, 136), (290, 78), (350, 56), (420, 58), (466, 96), (470, 122), (240, 138)]
+def tingir(img, cor):
+    r, g, b, a = img.split()
+    r, g, b = (canal.point(lambda v, c=c: v * c // 255) for canal, c in zip((r, g, b), cor))
+    return Image.merge('RGBA', (r, g, b, a))
 
-def corpo():
-    img = Image.new('RGBA', (W * S, H * S))
+def camada_atras():
+    img = tela()
     d = ImageDraw.Draw(img)
-    # suspensões (ficam atrás das rodas)
     for a, b in [((250, 150), (190, 178)), ((250, 195), (190, 178)), ((700, 150), (770, 178)), ((700, 190), (770, 178))]:
-        d.line(s([a, b]), fill=CINZA, width=4 * S)
-    # asa traseira
-    d.polygon(s([(150, 80), (165, 80), (200, 136), (186, 138)]), fill=CINZA)
-    d.polygon(s([(50, 34), (178, 34), (178, 54), (50, 58)]), fill=PRETO)
+        d.line(s([a, b]), fill=CINZA, width=4 * S)                                           # suspensões
+    d.polygon(s([(150, 80), (165, 80), (200, 136), (186, 138)]), fill=CINZA)                 # pilone
+    d.polygon(s([(50, 34), (178, 34), (178, 54), (50, 58)]), fill=PRETO)                     # asa traseira
     d.polygon(s([(60, 66), (170, 64), (170, 78), (60, 80)]), fill=PRETO)
-    d.polygon(s([(58, 30), (84, 30), (96, 150), (70, 150)]), fill=VERMELHO)
-    # assoalho
-    d.polygon(s([(120, 200), (880, 200), (880, 214), (120, 214)]), fill=PRETO)
-    # chassi + cobertura do motor
+    d.polygon(s([(120, 200), (880, 200), (880, 214), (120, 214)]), fill=PRETO)               # assoalho
+    return reduzir(img, W, H)
+
+def camada_pintura():
+    img = tela()
+    d = ImageDraw.Draw(img)
     mascara = Image.new('L', img.size)
     dm = ImageDraw.Draw(mascara)
     for poly in (CHASSI, COBERTURA):
-        d.polygon(s(poly), fill=VERMELHO)
+        d.polygon(s(poly), fill=BASE_PINTURA)
         dm.polygon(s(poly), fill=255)
+    img = sombrear(img, mascara, 56, 214)
+    d = ImageDraw.Draw(img)
+    for poly in (CHASSI, COBERTURA):
+        d.line(s(poly + [poly[0]]), fill=CONTORNO_PINTURA, width=3 * S, joint='curve')
+    for poly in (PLACA_TRASEIRA, PLACA_DIANTEIRA):
+        d.polygon(s(poly), fill=BASE_PINTURA)
+    return reduzir(img, W, H)
+
+def camada_frente():
+    img = tela()
+    d = ImageDraw.Draw(img)
     d.polygon(s([(250, 166), (860, 182), (860, 190), (250, 176)]), fill=BRANCO)             # faixa
     d.polygon(s([(330, 128), (352, 126), (352, 150), (330, 152)]), fill=PRETO)              # entrada do sidepod
     d.ellipse(s([(430, 66), (452, 86)]), fill=PRETO)                                        # airbox
     d.ellipse(s([(338, 148), (382, 192)]), fill=BRANCO)                                     # número
     d.text((360 * S, 170 * S), '7', font=fonte(30), fill=PRETO, anchor='mm')
     d.text((372 * S, 104 * S), 'CG RACING', font=fonte(16), fill=BRANCO, anchor='mm')
-    img = sombrear(img, mascara, 56, 214)
-    d = ImageDraw.Draw(img)
-    for poly in (CHASSI, COBERTURA):
-        d.line(s(poly + [poly[0]]), fill=VERMELHO_ESC, width=3 * S, joint='curve')
-    # cockpit, piloto, halo
-    d.polygon(s([(470, 118), (476, 100), (560, 100), (575, 118)]), fill=PRETO)
-    d.ellipse(s([(489, 66), (541, 118)]), fill=AMARELO)
-    d.polygon(s([(520, 82), (541, 84), (540, 96), (518, 94)]), fill=PRETO)
-    d.line(s([(468, 118), (480, 74), (560, 70), (598, 114)]), fill=CINZA, width=10 * S, joint='curve')
-    # asa dianteira
-    d.polygon(s([(800, 212), (955, 208), (955, 222), (800, 224)]), fill=PRETO)
+    d.polygon(s([(470, 118), (476, 100), (560, 100), (575, 118)]), fill=PRETO)              # cockpit
+    d.ellipse(s([(489, 66), (541, 118)]), fill=AMARELO)                                     # capacete
+    d.polygon(s([(520, 82), (541, 84), (540, 96), (518, 94)]), fill=PRETO)                  # viseira
+    d.line(s([(468, 118), (480, 74), (560, 70), (598, 114)]), fill=CINZA, width=10 * S, joint='curve')  # halo
+    d.polygon(s([(800, 212), (955, 208), (955, 222), (800, 224)]), fill=PRETO)              # asa dianteira
     d.polygon(s([(820, 198), (950, 192), (950, 204), (820, 208)]), fill=PRETO)
-    d.polygon(s([(930, 178), (956, 178), (956, 224), (930, 224)]), fill=VERMELHO)
     return reduzir(img, W, H)
+
+def corpo(atras, pintura, frente):
+    return Image.alpha_composite(Image.alpha_composite(atras, tingir(pintura, TINTA_VERMELHA)), frente)
 
 def roda():
     n = RODA_R * 2
@@ -110,14 +130,48 @@ def galao():
     d.rounded_rectangle(s([(22, 30), (106, 120)]), radius=12 * S, fill=VERMELHO, outline=VERMELHO_ESC, width=5 * S)
     d.rounded_rectangle(s([(40, 12), (88, 32)]), radius=6 * S, fill=PRETO)
     d.rectangle(s([(52, 18), (76, 26)]), fill=(0, 0, 0, 0))
-    d.ellipse(s([(48, 62), (80, 98)]), fill=BRANCO)                                         # gota
+    d.ellipse(s([(48, 62), (80, 98)]), fill=BRANCO)
     d.polygon(s([(50, 72), (64, 44), (78, 72)]), fill=BRANCO)
     return reduzir(img, n, n)
 
+def estrelas():
+    rnd = random.Random(3)
+    img = Image.new('RGBA', (1024, 512))
+    d = ImageDraw.Draw(img)
+    for _ in range(420):
+        x, y, r = rnd.uniform(0, 1024), rnd.uniform(0, 512), rnd.choice([0.6, 0.8, 1.0, 1.4, 2.0])
+        d.ellipse([x - r, y - r, x + r, y + r], fill=(255, 255, 255, rnd.randint(140, 255)))
+    return img
+
+def terra():
+    n, rnd = 256, random.Random(5)
+    img = Image.new('RGBA', (n * S, n * S))
+    d = ImageDraw.Draw(img)
+    d.ellipse(s([(8, 8), (248, 248)]), fill=(40, 110, 200, 255))                             # oceano
+    for _ in range(9):                                                                     # continentes
+        x, y, rx, ry = rnd.uniform(40, 216), rnd.uniform(40, 216), rnd.uniform(14, 40), rnd.uniform(10, 30)
+        d.ellipse(s([(x - rx, y - ry), (x + rx, y + ry)]), fill=(70, 160, 80, 255))
+    for _ in range(7):                                                                     # nuvens
+        x, y, rx = rnd.uniform(40, 216), rnd.uniform(40, 216), rnd.uniform(18, 46)
+        d.ellipse(s([(x - rx, y - 6), (x + rx, y + 6)]), fill=(255, 255, 255, 150))
+    mascara = Image.new('L', img.size)
+    ImageDraw.Draw(mascara).ellipse(s([(8, 8), (248, 248)]), fill=255)
+    sombra = Image.new('RGBA', img.size)                                                   # lado da noite
+    ImageDraw.Draw(sombra).ellipse(s([(70, -20), (330, 280)]), fill=(0, 0, 20, 150))
+    img = Image.alpha_composite(img, sombra)
+    img.putalpha(ImageChops.multiply(img.split()[3], mascara))
+    return reduzir(img, n, n)
+
 if __name__ == '__main__':
-    saida = sys.argv[1]
-    os.makedirs(saida, exist_ok=True)
-    for nome, fazer in [('f1_corpo', corpo), ('f1_roda', roda), ('moeda', moeda), ('galao', galao)]:
-        caminho = os.path.join(saida, nome + '.png')
-        fazer().save(caminho)
+    raiz = sys.argv[1]
+    f1, ceu = os.path.join(raiz, 'F1'), os.path.join(raiz, 'Ceu')
+    os.makedirs(f1, exist_ok=True)
+    os.makedirs(ceu, exist_ok=True)
+    atras, pintura, frente = camada_atras(), camada_pintura(), camada_frente()
+    saidas = [(f1, 'f1_atras', atras), (f1, 'f1_pintura', pintura), (f1, 'f1_frente', frente),
+              (f1, 'f1_corpo', corpo(atras, pintura, frente)), (f1, 'f1_roda', roda()), (f1, 'moeda', moeda()),
+              (f1, 'galao', galao()), (ceu, 'estrelas', estrelas()), (ceu, 'terra', terra())]
+    for pasta, nome, img in saidas:
+        caminho = os.path.join(pasta, nome + '.png')
+        img.save(caminho)
         print(caminho)
