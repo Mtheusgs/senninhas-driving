@@ -1,6 +1,6 @@
 {
     "name": "CarroCG.PlayTests",
-    "references": ["CarroCG", "UnityEngine.TestRunner"],
+    "references": ["CarroCG", "UnityEngine.TestRunner", "Unity.TextMeshPro", "UnityEngine.UI"],
     "overrideReferences": true,
     "precompiledReferences": ["nunit.framework.dll"],
     "autoReferenced": false,
