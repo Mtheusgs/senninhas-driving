@@ -1,11 +1,13 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
-// Estados do jogo, combustível, contagem, HUD e recorde.
+// Estados do jogo, combustível, contagem, HUD, recorde por modo e botões de pausa/fim.
 public class Partida : MonoBehaviour
 {
-    public enum Estado { Jogando, Pausa, Fim }
+    public enum Estado { Jogando, Pausa, Fim, Congelado }
 
     public F1 f1;
     public Combustivel combustivel = new();
@@ -47,6 +49,7 @@ public class Partida : MonoBehaviour
 
     void Update()
     {
+        if (EstadoAtual == Estado.Congelado) return;
         if (Input.GetKeyDown(KeyCode.R)) { Reiniciar(); return; }
         if (Input.GetKeyDown(KeyCode.Escape) && EstadoAtual != Estado.Fim) AlternarPausa();
         if (EstadoAtual != Estado.Jogando) return;
@@ -60,16 +63,34 @@ public class Partida : MonoBehaviour
 
     public void Reiniciar() => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 
+    public void IrParaMenu()
+    {
+        Time.timeScale = 1;
+        SceneManager.LoadScene("Menu");
+    }
+
     public void AlternarPausa()
     {
+        if (EstadoAtual != Estado.Jogando && EstadoAtual != Estado.Pausa) return;
         bool pausar = EstadoAtual == Estado.Jogando;
         EstadoAtual = pausar ? Estado.Pausa : Estado.Jogando;
         Time.timeScale = pausar ? 0 : 1;
         painelPausa.SetActive(pausar);
+        if (pausar) Selecionar(painelPausa);
+    }
+
+    // Modo aula: segura o jogo parado (sem painel) enquanto a repintura por scanline acontece.
+    public void Congelar(bool sim)
+    {
+        if (sim && EstadoAtual != Estado.Jogando) return;
+        if (!sim && EstadoAtual != Estado.Congelado) return;
+        EstadoAtual = sim ? Estado.Congelado : Estado.Jogando;
+        Time.timeScale = sim ? 0 : 1;
     }
 
     void AoColetar(TipoColetavel tipo)
     {
+        if (EstadoAtual != Estado.Jogando) return;
         if (tipo == TipoColetavel.Moeda) Moedas++;
         else combustivel.Abastecer(galaoQuantidade);
     }
@@ -83,12 +104,21 @@ public class Partida : MonoBehaviour
     {
         EstadoAtual = Estado.Fim;
         f1.motorLigado = false;
+        f1.controlePeloTeclado = false;     // sem motor e sem giro no ar depois do fim
+        f1.acelerador = 0;
         bool novo = Preferencias.RegistrarPartida(Sessao.Modo, Distancia, Moedas);
         float recorde = Preferencias.Recorde(Sessao.Modo);
         textoFim.text = $"{motivo}\n<size=60%>{Distancia:0} m  ·  {Moedas} moedas\n" +
-                        (novo ? "Novo recorde!" : $"Recorde: {recorde:0} m") + "\n\nR para jogar de novo</size>";
+                        (novo ? "Novo recorde!" : $"Recorde: {recorde:0} m") + "</size>";
         painelFim.SetActive(true);
+        Selecionar(painelFim);
         AtualizarHud();
+    }
+
+    static void Selecionar(GameObject painel)
+    {
+        var botao = painel.GetComponentInChildren<Button>();
+        if (botao && EventSystem.current) EventSystem.current.SetSelectedGameObject(botao.gameObject);
     }
 
     void AtualizarHud()

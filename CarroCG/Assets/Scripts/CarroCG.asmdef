@@ -1,4 +1,4 @@
 {
     "name": "CarroCG",
-    "references": ["Unity.TextMeshPro"]
+    "references": ["Unity.TextMeshPro", "UnityEngine.UI"]
 }

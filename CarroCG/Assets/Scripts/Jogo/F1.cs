@@ -7,8 +7,8 @@ public class F1 : MonoBehaviour
     public WheelJoint2D eixoTraseiro, eixoDianteiro;
     public float velocidadeMotor = 2400f;      // graus/s na roda
     public float torqueMotor = 40f;
-    public float torqueNoAr = 8f;
-    public Vector2 centroDeMassa = new(0, -0.15f);
+    public float torqueNoAr = 16f;                 // gira > 90° em ~1 s no ar (ConfigurarPartida usa o do modo)
+    public Vector2 centroDeMassa = new(0, 0.05f);  // menos baixo: dá para empinar e capotar
     public bool controlePeloTeclado = true;
     [Range(-1, 1)] public float acelerador;
     public bool motorLigado = true;
