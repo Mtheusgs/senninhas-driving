@@ -1,0 +1,128 @@
+using System.Collections;
+using TMPro;
+using UnityEngine;
+
+// Sobreposição didática (Tab): Bézier, emenda espelhada, recorte, eixos e velocidade do F1.
+// F: congela o jogo e repinta por scanline o trecho no centro da tela.
+public class ModoAula : MonoBehaviour
+{
+    public Terreno terreno;
+    public F1 f1;
+    public Partida partida;
+    public Material materialLinha;
+    public TMP_Text rotulo;
+    public float duracaoScanline = 2f;
+
+    public bool Ativo { get; private set; }
+    public bool Repintando { get; private set; }
+
+    static readonly Color Branco = Color.white, Amarelo = new(1f, 0.85f, 0.1f), Vermelho = new(1f, 0.25f, 0.25f),
+                          Verde = new(0.3f, 1f, 0.4f), Ciano = new(0.2f, 0.9f, 1f);
+
+    const string Texto =
+        "MODO AULA\n" +
+        "<size=80%>· Curva de Bézier: pontos e polígono de controle (branco)\n" +
+        "· Espelhamento na emenda: P1 = 2·P3 - P2 (ciano)\n" +
+        "· Recorte Sutherland-Hodgman: janela (amarelo), antes (vermelho), depois (verde)\n" +
+        "· Translação e rotação: eixos x/y e velocidade do F1\n" +
+        "F: preenchimento scanline em câmera lenta</size>";
+
+    GameObject eixos;
+    LineRenderer velocidade, scanline;
+    Rigidbody2D rb;
+
+    void OnEnable() => terreno.TrechoCriado += Desenhar;
+    void OnDisable() => terreno.TrechoCriado -= Desenhar;
+
+    void Start()
+    {
+        rb = f1.GetComponent<Rigidbody2D>();
+        eixos = new GameObject("Aula: eixos");
+        eixos.transform.SetParent(f1.transform, false);
+        Linha(eixos.transform, "x", false, 0.05f, Vermelho, new Vector3[] { Vector3.zero, Vector3.right * 1.2f });
+        Linha(eixos.transform, "y", false, 0.05f, Verde, new Vector3[] { Vector3.zero, Vector3.up * 0.9f });
+        velocidade = Linha(transform, "Aula: velocidade", true, 0.05f, Amarelo, new Vector3[2]);
+        scanline = Linha(transform, "Aula: scanline", true, 0.08f, Ciano, new Vector3[2]);
+        scanline.enabled = false;
+        rotulo.text = Texto;
+        foreach (var c in terreno.chunks) Desenhar(c);
+        DefinirAtivo(Preferencias.ModoAula);
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Tab)) DefinirAtivo(!Ativo);
+        if (Ativo && Input.GetKeyDown(KeyCode.F)) RepintarScanline();
+        if (Ativo)
+        {
+            velocidade.SetPosition(0, rb.position);
+            velocidade.SetPosition(1, rb.position + rb.linearVelocity * 0.3f);
+        }
+    }
+
+    public void DefinirAtivo(bool sim)
+    {
+        Ativo = sim;
+        eixos.SetActive(sim);
+        velocidade.enabled = sim;
+        rotulo.transform.parent.gameObject.SetActive(sim);
+        foreach (var c in terreno.chunks)
+        {
+            var aula = c.go.transform.Find("Aula");
+            if (aula) aula.gameObject.SetActive(sim);
+        }
+    }
+
+    public void RepintarScanline()
+    {
+        if (!Ativo || Repintando || partida.EstadoAtual != Partida.Estado.Jogando) return;
+        float x = Camera.main.transform.position.x;
+        var c = terreno.chunks.Find(k => k.janela.xMin <= x && x < k.janela.xMax);
+        if (c != null) StartCoroutine(Repintar(c));
+    }
+
+    IEnumerator Repintar(Terreno.Chunk c)
+    {
+        Repintando = true;
+        partida.Congelar(true);
+        scanline.enabled = true;
+        yield return terreno.RepintarAnimado(c, duracaoScanline, y =>
+        {
+            scanline.SetPosition(0, new Vector3(c.janela.xMin, y));
+            scanline.SetPosition(1, new Vector3(c.janela.xMax, y));
+        });
+        scanline.enabled = false;
+        partida.Congelar(false);
+        Repintando = false;
+    }
+
+    void Desenhar(Terreno.Chunk c)
+    {
+        var raiz = new GameObject("Aula").transform;
+        raiz.SetParent(c.go.transform, false);          // some junto com o trecho
+        Linha(raiz, "controle", true, 0.04f, Branco, AulaGeometria.Controle(c.trecho));
+        foreach (var p in AulaGeometria.Controle(c.trecho))
+            Linha(raiz, "ponto", true, 0.05f, Branco, AulaGeometria.Quadrado(p, 0.3f));
+        Linha(raiz, "janela", true, 0.05f, Amarelo, AulaGeometria.Retangulo(c.janela));
+        Linha(raiz, "antes do recorte", true, 0.04f, Vermelho, AulaGeometria.Fechado(c.poligonoOriginal));
+        Linha(raiz, "recortado", true, 0.04f, Verde, AulaGeometria.Fechado(c.poligonoRecortado));
+        int i = terreno.chunks.IndexOf(c);
+        if (i > 0) Linha(raiz, "emenda", true, 0.08f, Ciano, AulaGeometria.Emenda(terreno.chunks[i - 1].trecho, c.trecho));
+        raiz.gameObject.SetActive(Ativo);
+    }
+
+    LineRenderer Linha(Transform pai, string nome, bool mundo, float largura, Color cor, Vector3[] pontos)
+    {
+        var go = new GameObject(nome);
+        go.transform.SetParent(pai, false);
+        var lr = go.AddComponent<LineRenderer>();
+        lr.sharedMaterial = materialLinha;
+        lr.useWorldSpace = mundo;
+        lr.widthMultiplier = largura;
+        lr.startColor = lr.endColor = cor;
+        lr.sortingOrder = 50;                         // acima do carro, abaixo do HUD (100)
+        lr.positionCount = pontos.Length;
+        lr.SetPositions(pontos);
+        return lr;
+    }
+}
