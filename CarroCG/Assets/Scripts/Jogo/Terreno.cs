@@ -23,7 +23,7 @@ public class Terreno : MonoBehaviour
     public int amostras = 64;
     public int trechosAFrente = 3;
     public float profundidade = 18f;          // cobre a câmera no zoom máximo olhando para baixo
-    public float fundoExtra = 40f;            // o polígono desce além da janela: o recorte sempre corta (modo aula)
+    public float fundoExtra = 4f;             // o polígono desce além da janela: o recorte sempre corta e o pedaço cortado aparece no modo aula
     public float amplitudeInicial = 2.5f, ganhoPorTrecho = 0.5f, amplitudeMax = 12f;
     public TerrenoChunk.Paleta paleta = new();
     public PhysicsMaterial2D materialChao;

@@ -46,9 +46,12 @@ public static class MontarJogo
         aula.partida = partida;
         aula.materialLinha = MontagemComum.MaterialUnlit;
         var caixaAula = MontagemComum.Caixa("Rotulo Aula", canvas.transform, new Vector2(1, 1), new Vector2(-40, -40),
-                                            new Vector2(820, 250), new Color(0, 0, 0, 0.55f));
+                                            new Vector2(720, 250), new Color(0, 0, 0, 0.55f));   // não cobre a caixa de distância
         aula.rotulo = MontagemComum.Texto("Texto", caixaAula, new Vector2(0.03f, 0.05f), new Vector2(0.97f, 0.95f),
                                           30, TextAlignmentOptions.TopLeft);
+        aula.rotulo.enableAutoSizing = true;
+        aula.rotulo.fontSizeMin = 16;
+        aula.rotulo.fontSizeMax = 30;
         MontagemComum.CriarEventSystem();
 
         Directory.CreateDirectory("Assets/Scenes");

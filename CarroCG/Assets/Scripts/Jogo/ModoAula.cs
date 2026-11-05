@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -30,6 +31,7 @@ public class ModoAula : MonoBehaviour
     GameObject eixos;
     LineRenderer velocidade, scanline;
     Rigidbody2D rb;
+    CameraSegue segue;
 
     void OnEnable() => terreno.TrechoCriado += Desenhar;
     void OnDisable() => terreno.TrechoCriado -= Desenhar;
@@ -37,6 +39,7 @@ public class ModoAula : MonoBehaviour
     void Start()
     {
         rb = f1.GetComponent<Rigidbody2D>();
+        segue = Camera.main.GetComponent<CameraSegue>();
         eixos = new GameObject("Aula: eixos");
         eixos.transform.SetParent(f1.transform, false);
         Linha(eixos.transform, "x", false, 0.05f, Vermelho, new Vector3[] { Vector3.zero, Vector3.right * 1.2f });
@@ -57,6 +60,10 @@ public class ModoAula : MonoBehaviour
         {
             velocidade.SetPosition(0, rb.position);
             velocidade.SetPosition(1, rb.position + rb.linearVelocity * 0.3f);
+            var atual = terreno.chunks.Find(k => k.janela.xMin <= rb.position.x && rb.position.x < k.janela.xMax);
+            if (atual != null && segue)    // do fundo do polígono original (pedaço cortado) até acima da superfície (espaço do HUD)
+                segue.enquadrar = Rect.MinMaxRect(atual.janela.xMin, atual.poligonoOriginal.Min(p => p.y) - 1,
+                                                  atual.janela.xMax, atual.janela.yMax + 5);
         }
     }
 
@@ -66,6 +73,7 @@ public class ModoAula : MonoBehaviour
         eixos.SetActive(sim);
         velocidade.enabled = sim;
         rotulo.transform.parent.gameObject.SetActive(sim);
+        if (!sim && segue) segue.enquadrar = null;
         foreach (var c in terreno.chunks)
         {
             var aula = c.go.transform.Find("Aula");

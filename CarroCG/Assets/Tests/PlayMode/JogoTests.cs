@@ -280,4 +280,21 @@ public class JogoTests
         Assert.IsFalse(f1.controlePeloTeclado);
         Assert.AreEqual(0f, f1.acelerador);
     }
+
+    [UnityTest]
+    public IEnumerator ModoAula_AfastaACameraParaMostrarAJanela()
+    {
+        yield return Carregar();
+        var aula = Object.FindFirstObjectByType<ModoAula>();
+        aula.DefinirAtivo(true);
+        yield return new WaitForSeconds(3);
+        var terreno = Object.FindFirstObjectByType<Terreno>();
+        var cam = Camera.main;
+        var c = terreno.chunks.Find(k => k.janela.xMin <= cam.transform.position.x && cam.transform.position.x < k.janela.xMax);
+        float baseDaTela = cam.transform.position.y - cam.orthographicSize;
+        Assert.Less(baseDaTela, c.janela.yMin, "a borda de baixo da janela de recorte fica fora da tela");
+        aula.DefinirAtivo(false);
+        yield return new WaitForSeconds(3);
+        Assert.Less(cam.orthographicSize, 12f, "a câmera não voltou ao zoom do jogo");
+    }
 }

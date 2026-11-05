@@ -273,7 +273,8 @@ public static class MontagemComum
         var go = new GameObject("Botoes", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         var rt = (RectTransform)go.transform;
         rt.SetParent(pai, false);
-        rt.anchorMin = rt.anchorMax = rt.pivot = ancora;
+        rt.anchorMin = rt.anchorMax = ancora;
+        rt.pivot = new Vector2(0.5f, 0.5f);          // centrada na âncora (a altura cresce para os dois lados)
         rt.sizeDelta = new Vector2(largura, 0);
         var v = go.GetComponent<VerticalLayoutGroup>();
         v.spacing = 14;
