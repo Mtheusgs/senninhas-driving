@@ -12,13 +12,20 @@ public class JogoTests
     Partida partida;
 
     [SetUp]
-    public void RecordeDeTeste() => Partida.ChaveRecorde = "recorde-teste";
+    public void Isolar()
+    {
+        Preferencias.Prefixo = "teste.";
+        Sessao.Modo = Modo.Terra;
+    }
 
     [TearDown]
-    public void RecordeReal()
+    public void Limpar()
     {
-        PlayerPrefs.DeleteKey("recorde-teste");
-        Partida.ChaveRecorde = "recorde";
+        Preferencias.ApagarTudo();
+        Preferencias.Prefixo = "";
+        Sessao.Modo = Modo.Terra;
+        Physics2D.gravity = new Vector2(0, ModoJogo.GravidadeTerra);
+        Time.timeScale = 1;
     }
 
     IEnumerator Carregar()
@@ -96,20 +103,20 @@ public class JogoTests
     [UnityTest]
     public IEnumerator Terminar_NaoMexeNoRecordeReal()
     {
-        bool tinha = PlayerPrefs.HasKey("recorde");
-        float antes = PlayerPrefs.GetFloat("recorde");
-        PlayerPrefs.SetFloat("recorde", 5);
+        bool tinha = PlayerPrefs.HasKey("recorde.Terra");
+        float antes = PlayerPrefs.GetFloat("recorde.Terra");
+        PlayerPrefs.SetFloat("recorde.Terra", 5);
         try
         {
             yield return Carregar();
             f1.acelerador = 1;
             yield return new WaitForSeconds(3);
             partida.Terminar("teste");
-            Assert.AreEqual(5f, PlayerPrefs.GetFloat("recorde"));
+            Assert.AreEqual(5f, PlayerPrefs.GetFloat("recorde.Terra"));
         }
         finally
         {
-            if (tinha) PlayerPrefs.SetFloat("recorde", antes); else PlayerPrefs.DeleteKey("recorde");
+            if (tinha) PlayerPrefs.SetFloat("recorde.Terra", antes); else PlayerPrefs.DeleteKey("recorde.Terra");
         }
     }
 

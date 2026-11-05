@@ -7,9 +7,9 @@ public struct Trecho { public Vector2 p0, p1, p2, p3; }
 public class TerrenoGerador
 {
     public float largura = 20f;
-    public float amplitudeInicial = 1.5f;
-    public float ganhoPorTrecho = 0.25f;
-    public float amplitudeMax = 5f;
+    public float amplitudeInicial = 2.5f;     // Terra (ModoJogo); morros crescem até ~45° perto de 300 m
+    public float ganhoPorTrecho = 0.5f;
+    public float amplitudeMax = 12f;
     public float limiteY = 30f;
 
     readonly System.Random rnd;

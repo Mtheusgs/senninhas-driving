@@ -20,7 +20,6 @@ public class Partida : MonoBehaviour
     public int Moedas { get; private set; }
     public float Distancia { get; private set; }
 
-    public static string ChaveRecorde = "recorde";   // os testes trocam por uma chave própria
     float x0;
 
     void OnEnable()
@@ -84,14 +83,10 @@ public class Partida : MonoBehaviour
     {
         EstadoAtual = Estado.Fim;
         f1.motorLigado = false;
-        float recorde = PlayerPrefs.GetFloat(ChaveRecorde, 0);
-        if (Distancia > recorde)
-        {
-            recorde = Distancia;
-            PlayerPrefs.SetFloat(ChaveRecorde, recorde);
-            PlayerPrefs.Save();
-        }
-        textoFim.text = $"{motivo}\n<size=60%>{Distancia:0} m  ·  {Moedas} moedas\nRecorde: {recorde:0} m\n\nR para jogar de novo</size>";
+        bool novo = Preferencias.RegistrarPartida(Sessao.Modo, Distancia, Moedas);
+        float recorde = Preferencias.Recorde(Sessao.Modo);
+        textoFim.text = $"{motivo}\n<size=60%>{Distancia:0} m  ·  {Moedas} moedas\n" +
+                        (novo ? "Novo recorde!" : $"Recorde: {recorde:0} m") + "\n\nR para jogar de novo</size>";
         painelFim.SetActive(true);
         AtualizarHud();
     }
@@ -103,6 +98,6 @@ public class Partida : MonoBehaviour
         barraCombustivel.anchorMax = a;
         textoMoedas.text = $"Moedas  {Moedas}";
         textoDistancia.text = $"{Distancia:0} m";
-        textoRecorde.text = $"Recorde {PlayerPrefs.GetFloat(ChaveRecorde, 0):0} m";
+        textoRecorde.text = $"Recorde {Preferencias.Recorde(Sessao.Modo):0} m";
     }
 }
