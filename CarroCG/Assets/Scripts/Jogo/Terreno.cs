@@ -13,6 +13,8 @@ public class Terreno : MonoBehaviour
         public Vector2[] curva;
         public Rect janela;
         public List<Vector2> poligonoOriginal, poligonoRecortado;   // antes e depois do Sutherland–Hodgman
+        public Vector2[] facetas;         // pontos usados no sombreamento (poucos, para o Flat aparecer)
+        public Texture2D luz;             // cor da luz por coluna de pixel (w×1)
         public GameObject go;
         public Texture2D tex;
     }
@@ -27,6 +29,14 @@ public class Terreno : MonoBehaviour
     public float amplitudeInicial = 2.5f, ganhoPorTrecho = 0.5f, amplitudeMax = 12f;
     public TerrenoChunk.Paleta paleta = new();
     public PhysicsMaterial2D materialChao;
+    public Material materialLuz;                       // CarroCG/TerrenoLuz: cor × luz por coluna
+    public int amostrasLuz = 12;
+    public ModoSombreamento modoSombreamento = ModoSombreamento.Phong;
+
+    Vector2 dirLuz = Vector2.up;
+    Color corSol = Color.white, corAmbiente = new(0.42f, 0.44f, 0.5f);
+    MaterialPropertyBlock mpb;
+    static readonly int IdLuz = Shader.PropertyToID("_Luz");
 
     public readonly List<Chunk> chunks = new();
     public event System.Action<Chunk> TrechoCriado;
@@ -67,6 +77,33 @@ public class Terreno : MonoBehaviour
         parede.offset = new Vector2(chunks[0].trecho.p0.x - transform.position.x, 0);
     }
 
+    // Iluminação do terreno: guarda a luz atual e recalcula a luz por coluna de todos os trechos.
+    public void Iluminar(Vector2 dir, Color sol, Color ambiente)
+    {
+        dirLuz = dir;
+        corSol = sol;
+        corAmbiente = ambiente;
+        foreach (var c in chunks) AplicarLuz(c);
+    }
+
+    public void ProximoSombreamento()
+    {
+        modoSombreamento = (ModoSombreamento)(((int)modoSombreamento + 1) % 3);
+        foreach (var c in chunks) AplicarLuz(c);
+    }
+
+    void AplicarLuz(Chunk c)
+    {
+        c.luz.SetPixels32(Sombreamento.LuzPorColuna(modoSombreamento, c.facetas, c.janela, ppu, c.luz.width, dirLuz, corSol, corAmbiente));
+        c.luz.Apply();
+        var r = c.go.GetComponent<SpriteRenderer>();
+        if (materialLuz) r.sharedMaterial = materialLuz;
+        mpb ??= new MaterialPropertyBlock();
+        r.GetPropertyBlock(mpb);
+        mpb.SetTexture(IdLuz, c.luz);
+        r.SetPropertyBlock(mpb);
+    }
+
     // Altura da superfície em x pelo trecho que o contém; NaN fora dos trechos existentes.
     public float AlturaEm(float x)
     {
@@ -101,12 +138,16 @@ public class Terreno : MonoBehaviour
         col.points = curva.Select(p => p - janela.min).ToArray();
         col.sharedMaterial = materialChao;
         if (chunks.Count > 0) Emendar(chunks[^1], go, col);
+        var luz = new Texture2D(w, 1, TextureFormat.RGBA32, false)
+            { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Point, name = $"Luz {indice}" };
 
         var c = new Chunk
         {
             trecho = t, indice = indice, curva = curva, janela = janela, go = go, tex = tex,
             poligonoOriginal = original, poligonoRecortado = poligono,
+            facetas = TerrenoGerador.Amostrar(t, amostrasLuz + 1), luz = luz,
         };
+        AplicarLuz(c);
         chunks.Add(c);
         TrechoCriado?.Invoke(c);
         return c;
@@ -151,6 +192,7 @@ public class Terreno : MonoBehaviour
         Destruir(c.go.GetComponent<SpriteRenderer>().sprite);
         Destruir(c.go);
         Destruir(c.tex);
+        Destruir(c.luz);
     }
 
     static void Destruir(Object o)

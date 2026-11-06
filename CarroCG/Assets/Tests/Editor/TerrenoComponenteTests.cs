@@ -46,10 +46,12 @@ public class TerrenoComponenteTests
     [Test]
     public void Atualizar_DescartaTrechosAntigos()
     {
+        var primeira = terreno.GerarProximo().luz;
         for (float x = 0; x <= 2000; x += 5) terreno.Atualizar(x);
         Assert.LessOrEqual(terreno.chunks.Count, terreno.trechosAFrente + 3);
         Assert.AreEqual(terreno.chunks.Count, terreno.transform.childCount, "trechos descartados ficaram na cena");
         Assert.Greater(terreno.chunks[0].trecho.p3.x, 2000 - 2 * terreno.Gerador.largura);
+        Assert.IsTrue(primeira == null, "textura de luz do trecho descartado não foi liberada");
     }
     [Test]
     public void Trecho_FundoCobreACameraNoZoomMaximo()
@@ -108,5 +110,37 @@ public class TerrenoComponenteTests
         terreno.Atualizar(0);
         Assert.AreEqual(0f, terreno.AlturaEm(5), 1e-4, "1º trecho é plano");
         Assert.IsNaN(terreno.AlturaEm(-50));
+    }
+
+    [Test]
+    public void Trecho_TemLuzPorColuna()
+    {
+        var c = terreno.GerarProximo();
+        Assert.IsNotNull(c.luz);
+        Assert.AreEqual(c.tex.width, c.luz.width);
+        Assert.AreEqual(1, c.luz.height);
+        Assert.AreEqual(terreno.amostrasLuz + 1, c.facetas.Length);
+    }
+
+    [Test]
+    public void Iluminar_MudaALuzDosTrechos()
+    {
+        terreno.GerarProximo(); terreno.GerarProximo();
+        var c = terreno.GerarProximo();                          // trecho com morro
+        var antes = c.luz.GetPixels32();
+        terreno.Iluminar(new Vector2(1, 0.2f).normalized, Color.white, Color.black);
+        CollectionAssert.AreNotEqual(antes, c.luz.GetPixels32());
+    }
+
+    [Test]
+    public void ProximoSombreamento_CiclaOsTresModos()
+    {
+        Assert.AreEqual(ModoSombreamento.Phong, terreno.modoSombreamento);
+        terreno.ProximoSombreamento();
+        Assert.AreEqual(ModoSombreamento.Flat, terreno.modoSombreamento);
+        terreno.ProximoSombreamento();
+        Assert.AreEqual(ModoSombreamento.Gouraud, terreno.modoSombreamento);
+        terreno.ProximoSombreamento();
+        Assert.AreEqual(ModoSombreamento.Phong, terreno.modoSombreamento);
     }
 }
