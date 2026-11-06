@@ -30,6 +30,7 @@ public static class MontarMenu
         config.f1 = f1.f1;
         config.cam = cam;
         config.forcarTerra = true;
+        config.limiteAmplitude = 4f;          // demo tranquilo: quase nunca trava nem capota
         var piloto = f1.chassi.AddComponent<PilotoAutomatico>();
         piloto.f1 = f1.f1;
         piloto.terreno = terreno;
@@ -37,6 +38,10 @@ public static class MontarMenu
         var canvas = MontagemComum.CriarCanvas(cam);
         var menu = canvas.gameObject.AddComponent<Menu>();
         var raiz = canvas.transform;
+        // primeiro filho: escurece só o fundo (fica atrás das telas) quando o demo recomeça
+        var fade = MontagemComum.Painel("Fade do demo", raiz, 0f).GetComponent<Image>();
+        fade.raycastTarget = false;
+        piloto.fade = fade;
         menu.principal = TelaPrincipal(raiz, menu);
         menu.escolhaModo = TelaEscolhaModo(raiz, menu);
         menu.garagem = TelaGaragem(raiz, menu);

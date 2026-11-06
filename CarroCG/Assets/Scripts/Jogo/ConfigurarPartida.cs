@@ -9,6 +9,7 @@ public class ConfigurarPartida : MonoBehaviour
     public Camera cam;
     public GameObject ceuLunar;
     public bool forcarTerra;            // fundo do menu: sempre Terra
+    public float limiteAmplitude;       // > 0: morros mais suaves (fundo do menu)
 
     public Modo ModoAtual { get; private set; }
 
@@ -20,7 +21,7 @@ public class ConfigurarPartida : MonoBehaviour
         terreno.semente = p.semente;
         terreno.amplitudeInicial = p.amplitudeInicial;
         terreno.ganhoPorTrecho = p.ganhoPorTrecho;
-        terreno.amplitudeMax = p.amplitudeMax;
+        terreno.amplitudeMax = limiteAmplitude > 0 ? Mathf.Min(p.amplitudeMax, limiteAmplitude) : p.amplitudeMax;
         terreno.paleta = p.paleta;
         terreno.ppu = Preferencias.PpuTerreno[Preferencias.Qualidade];
         f1.torqueNoAr = p.torqueNoAr;

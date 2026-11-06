@@ -244,4 +244,24 @@ public class MenuTests
         yield return new WaitForSeconds(45);
         Assert.LessOrEqual(piloto.Recomecos, 1, "o demo do menu recomeçou várias vezes (cortes no fundo)");
     }
+
+    [UnityTest]
+    public IEnumerator Demo_RecomecoAutomaticoEscureceEVolta()
+    {
+        yield return Carregar("Menu");
+        var piloto = Object.FindFirstObjectByType<PilotoAutomatico>();
+        piloto.IniciarRecomeco();
+        yield return new WaitForSecondsRealtime(0.3f);
+        Assert.Greater(piloto.fade.color.a, 0.3f, "recomeço sem transição (corte seco)");
+        yield return new WaitForSecondsRealtime(1.2f);
+        Assert.AreEqual(0f, piloto.fade.color.a, 0.01f);
+        Assert.AreEqual(1, piloto.Recomecos);
+    }
+
+    [UnityTest]
+    public IEnumerator Demo_MorrosMaisSuavesQueOJogo()
+    {
+        yield return Carregar("Menu");
+        Assert.Less(Object.FindFirstObjectByType<Terreno>().amplitudeMax, ModoJogo.Parametros(Modo.Terra).amplitudeMax);
+    }
 }
