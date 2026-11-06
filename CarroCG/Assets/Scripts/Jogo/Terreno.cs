@@ -67,6 +67,14 @@ public class Terreno : MonoBehaviour
         parede.offset = new Vector2(chunks[0].trecho.p0.x - transform.position.x, 0);
     }
 
+    // Altura da superfície em x pelo trecho que o contém; NaN fora dos trechos existentes.
+    public float AlturaEm(float x)
+    {
+        foreach (var c in chunks)
+            if (x >= c.trecho.p0.x && x <= c.trecho.p3.x) return TerrenoChunk.AlturaEm(c.curva, x);
+        return float.NaN;
+    }
+
     public Chunk GerarProximo()
     {
         var t = Gerador.Proximo();

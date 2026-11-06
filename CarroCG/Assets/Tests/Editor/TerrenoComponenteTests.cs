@@ -101,4 +101,12 @@ public class TerrenoComponenteTests
         Rodar(e);
         CollectionAssert.AreEqual(original, c.tex.GetPixels32());
     }
+
+    [Test]
+    public void AlturaEm_UsaOTrechoCertoENaNFora()
+    {
+        terreno.Atualizar(0);
+        Assert.AreEqual(0f, terreno.AlturaEm(5), 1e-4, "1º trecho é plano");
+        Assert.IsNaN(terreno.AlturaEm(-50));
+    }
 }
