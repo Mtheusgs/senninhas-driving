@@ -10,6 +10,7 @@ public class ModoAula : MonoBehaviour
     public Terreno terreno;
     public F1 f1;
     public Partida partida;
+    public CicloDia ciclo;
     public Material materialLinha;
     public TMP_Text rotulo;
     public float duracaoScanline = 2f;
@@ -26,10 +27,13 @@ public class ModoAula : MonoBehaviour
         "· Espelhamento na emenda: P1 = 2·P3 - P2 (ciano)\n" +
         "· Recorte Sutherland-Hodgman: janela (amarelo), antes (vermelho), depois (verde)\n" +
         "· Translação e rotação: eixos x/y e velocidade do F1\n" +
+        "· Iluminação: Lambert {0} (tecla L) - normais (magenta), luz do sol (amarelo)\n" +
         "F: preenchimento scanline em câmera lenta</size>";
 
     GameObject eixos;
-    LineRenderer velocidade, scanline;
+    LineRenderer velocidade, scanline, raioSol;
+    ModoSombreamento modoNoRotulo = (ModoSombreamento)(-1);
+    static readonly Color Magenta = new(1f, 0.3f, 0.9f);
     Rigidbody2D rb;
     CameraSegue segue;
 
@@ -47,7 +51,7 @@ public class ModoAula : MonoBehaviour
         velocidade = Linha(transform, "Aula: velocidade", true, 0.05f, Amarelo, new Vector3[2]);
         scanline = Linha(transform, "Aula: scanline", true, 0.08f, Ciano, new Vector3[2]);
         scanline.enabled = false;
-        rotulo.text = Texto;
+        raioSol = Linha(transform, "Aula: sol", true, 0.06f, Amarelo, new Vector3[2]);
         foreach (var c in terreno.chunks) Desenhar(c);
         DefinirAtivo(Preferencias.ModoAula);
     }
@@ -56,8 +60,18 @@ public class ModoAula : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Tab)) DefinirAtivo(!Ativo);
         if (Ativo && Input.GetKeyDown(KeyCode.F)) RepintarScanline();
+        if (terreno.modoSombreamento != modoNoRotulo)
+        {
+            modoNoRotulo = terreno.modoSombreamento;
+            rotulo.text = string.Format(Texto, modoNoRotulo);
+        }
         if (Ativo)
         {
+            if (ciclo)
+            {
+                raioSol.SetPosition(0, rb.position);
+                raioSol.SetPosition(1, rb.position + ciclo.Atual.dirLuz * 2.5f);
+            }
             velocidade.SetPosition(0, rb.position);
             velocidade.SetPosition(1, rb.position + rb.linearVelocity * 0.3f);
             var atual = terreno.chunks.Find(k => k.janela.xMin <= rb.position.x && rb.position.x < k.janela.xMax);
@@ -72,6 +86,7 @@ public class ModoAula : MonoBehaviour
         Ativo = sim;
         eixos.SetActive(sim);
         velocidade.enabled = sim;
+        raioSol.enabled = sim;
         rotulo.transform.parent.gameObject.SetActive(sim);
         if (!sim && segue) segue.enquadrar = null;
         foreach (var c in terreno.chunks)
@@ -114,6 +129,11 @@ public class ModoAula : MonoBehaviour
         Linha(raiz, "janela", true, 0.05f, Amarelo, AulaGeometria.Retangulo(c.janela));
         Linha(raiz, "antes do recorte", true, 0.04f, Vermelho, AulaGeometria.Fechado(c.poligonoOriginal));
         Linha(raiz, "recortado", true, 0.04f, Verde, AulaGeometria.Fechado(c.poligonoRecortado));
+        var normais = new GameObject("normais").transform;
+        normais.SetParent(raiz, false);
+        var nv = Sombreamento.NormaisDosVertices(c.facetas);
+        for (int k = 0; k < nv.Length; k++)
+            Linha(normais, "normal", true, 0.04f, Magenta, new Vector3[] { c.facetas[k], c.facetas[k] + nv[k] * 0.8f });
         int i = terreno.chunks.IndexOf(c);
         if (i > 0) Linha(raiz, "emenda", true, 0.08f, Ciano, AulaGeometria.Emenda(terreno.chunks[i - 1].trecho, c.trecho));
         raiz.gameObject.SetActive(Ativo);

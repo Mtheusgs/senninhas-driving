@@ -10,6 +10,7 @@ public class Partida : MonoBehaviour
     public enum Estado { Jogando, Pausa, Fim, Congelado }
 
     public F1 f1;
+    public Terreno terreno;
     public Combustivel combustivel = new();
     public float galaoQuantidade = 45f;
     public DetectorCapotagem capotagem = new();
@@ -18,12 +19,14 @@ public class Partida : MonoBehaviour
     public RectTransform barraCombustivel;
     public TMP_Text textoMoedas, textoDistancia, textoRecorde, textoFim;
     public GameObject painelPausa, painelFim, avisoSemGasolina;
+    public TMP_Text textoAviso;               // aviso curto (ex.: modo de sombreamento)
 
     public Estado EstadoAtual { get; private set; }
     public int Moedas { get; private set; }
     public float Distancia { get; private set; }
 
     float x0;
+    float avisoAte;
 
     void OnEnable()
     {
@@ -46,13 +49,16 @@ public class Partida : MonoBehaviour
         painelPausa.SetActive(false);
         painelFim.SetActive(false);
         avisoSemGasolina.SetActive(false);
+        if (textoAviso) textoAviso.transform.parent.gameObject.SetActive(false);
         AtualizarHud();
     }
 
     void Update()
     {
+        if (textoAviso && Time.unscaledTime > avisoAte) textoAviso.transform.parent.gameObject.SetActive(false);
         if (EstadoAtual == Estado.Congelado) return;
         if (Input.GetKeyDown(KeyCode.R)) { Reiniciar(); return; }
+        if (Input.GetKeyDown(KeyCode.L) && EstadoAtual == Estado.Jogando) ProximoSombreamento();
         if (Input.GetKeyDown(KeyCode.Escape) && EstadoAtual != Estado.Fim) AlternarPausa();
         if (EstadoAtual != Estado.Jogando) return;
 
@@ -65,6 +71,16 @@ public class Partida : MonoBehaviour
     }
 
     public void Reiniciar() => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+
+    // Tecla L: Flat → Gouraud → Phong no terreno, com aviso por 1,5 s.
+    public void ProximoSombreamento()
+    {
+        terreno.ProximoSombreamento();
+        if (!textoAviso) return;
+        textoAviso.text = $"Sombreamento: {terreno.modoSombreamento}";
+        textoAviso.transform.parent.gameObject.SetActive(true);
+        avisoAte = Time.unscaledTime + 1.5f;
+    }
 
     public void IrParaMenu()
     {

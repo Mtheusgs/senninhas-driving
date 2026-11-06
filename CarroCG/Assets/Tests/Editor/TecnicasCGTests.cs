@@ -18,7 +18,7 @@ public class TecnicasCGTests
     {
         var comAlgoNoJogo = TecnicasCG.Lista.Where(t => t.lugares.Any(l => l.noJogo)).Select(t => t.nome);
         CollectionAssert.AreEquivalent(
-            new[] { "Preenchimento", "Curva de Bézier", "Recorte", "Translação", "Rotação", "Espelhamento" },
+            new[] { "Preenchimento", "Curva de Bézier", "Recorte", "Iluminação e sombreamento", "Translação", "Rotação", "Espelhamento" },
             comAlgoNoJogo);
     }
 

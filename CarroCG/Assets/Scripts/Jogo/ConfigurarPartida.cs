@@ -8,6 +8,7 @@ public class ConfigurarPartida : MonoBehaviour
     public F1 f1;
     public Camera cam;
     public GameObject ceuLunar;
+    public CicloDia ciclo;
     public bool forcarTerra;            // fundo do menu: sempre Terra
     public float limiteAmplitude;       // > 0: morros mais suaves (fundo do menu)
 
@@ -27,5 +28,7 @@ public class ConfigurarPartida : MonoBehaviour
         f1.torqueNoAr = p.torqueNoAr;
         cam.backgroundColor = p.ceu;
         if (ceuLunar) ceuLunar.SetActive(p.ceuLunar);
+        if (ciclo && p.ceuLunar) { ciclo.fixo = true; ciclo.lunar = true; }      // Lua: sol parado, sombra dura
+        if (ciclo && forcarTerra) { ciclo.fixo = true; ciclo.tempoFixo = 0.2f; } // menu: sempre de dia
     }
 }
