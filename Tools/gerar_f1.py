@@ -6,7 +6,7 @@ Saídas em Ceu/: estrelas.png, terra.png.
 Coordenadas do F1 em pixels de 960x300, y para baixo. PPU 256 no Unity.
 Layout usado por Editor/MontagemComum.cs: rodas em (190,178) e (770,178), raio 92; capacete em (515,92)."""
 import math, os, random, sys
-from PIL import Image, ImageChops, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 S = 4                                   # supersampling
 W, H = 960, 300
@@ -162,6 +162,58 @@ def terra():
     img.putalpha(ImageChops.multiply(img.split()[3], mascara))
     return reduzir(img, n, n)
 
+def mapa_normal(img, raio, forca):
+    """Normal map (codificado n*0,5+0,5) a partir da silhueta: altura = alfa desfocado; normal = (-dh/dx, dh/dy_img, 1)."""
+    h = img.split()[3].filter(ImageFilter.GaussianBlur(raio))
+    w, alt = h.size
+    px = h.load()
+    out = Image.new('RGBA', (w, alt))
+    o = out.load()
+    for y in range(alt):
+        for x in range(w):
+            dx = (px[min(w - 1, x + 1), y] - px[max(0, x - 1), y]) / 255 * forca
+            dy = (px[x, min(alt - 1, y + 1)] - px[x, max(0, y - 1)]) / 255 * forca   # y da imagem para baixo
+            nx, ny, nz = -dx, dy, 1.0                                                 # em UV (y para cima)
+            l = (nx * nx + ny * ny + nz * nz) ** 0.5
+            o[x, y] = (int((nx / l * 0.5 + 0.5) * 255), int((ny / l * 0.5 + 0.5) * 255), int((nz / l * 0.5 + 0.5) * 255), 255)
+    return out
+
+def sol():
+    n = 128
+    img = Image.new('RGBA', (n * S, n * S))
+    d = ImageDraw.Draw(img)
+    for r, a in [(62, 50), (52, 90), (40, 255)]:
+        d.ellipse(s([(64 - r, 64 - r), (64 + r, 64 + r)]), fill=(255, 214, 90, a))
+    d.ellipse(s([(30, 30), (98, 98)]), fill=(255, 238, 150, 255))
+    return reduzir(img, n, n)
+
+def lua():
+    n, rnd = 128, random.Random(9)
+    img = Image.new('RGBA', (n * S, n * S))
+    d = ImageDraw.Draw(img)
+    d.ellipse(s([(14, 14), (114, 114)]), fill=(225, 228, 235, 255))
+    for _ in range(7):
+        x, y, r = rnd.uniform(36, 92), rnd.uniform(36, 92), rnd.uniform(5, 12)
+        d.ellipse(s([(x - r, y - r), (x + r, y + r)]), fill=(190, 194, 205, 255))
+    return reduzir(img, n, n)
+
+def ceu_gradiente():
+    img = Image.new('RGBA', (4, 256))
+    for y in range(256):
+        for x in range(4):
+            img.putpixel((x, y), (255, 255, 255, 255 - y))      # opaco em cima, transparente embaixo
+    return img
+
+def feixe():
+    w, h = 256, 96
+    img = Image.new('RGBA', (w * S, h * S))
+    d = ImageDraw.Draw(img)
+    for k in range(24):                                          # cone que abre e some para a frente
+        f = k / 24
+        d.polygon(s([(0, 44), (w * (1 - f), 48 - 46 * (1 - f)), (w * (1 - f), 48 + 46 * (1 - f)), (0, 52)]),
+                  fill=(255, 250, 220, int(14 + 4 * f)))
+    return reduzir(img, w, h)
+
 if __name__ == '__main__':
     raiz = sys.argv[1]
     f1, ceu = os.path.join(raiz, 'F1'), os.path.join(raiz, 'Ceu')
@@ -170,7 +222,9 @@ if __name__ == '__main__':
     atras, pintura, frente = camada_atras(), camada_pintura(), camada_frente()
     saidas = [(f1, 'f1_atras', atras), (f1, 'f1_pintura', pintura), (f1, 'f1_frente', frente),
               (f1, 'f1_corpo', corpo(atras, pintura, frente)), (f1, 'f1_roda', roda()), (f1, 'moeda', moeda()),
-              (f1, 'galao', galao()), (ceu, 'estrelas', estrelas()), (ceu, 'terra', terra())]
+              (f1, 'galao', galao()), (ceu, 'estrelas', estrelas()), (ceu, 'terra', terra()),
+              (ceu, 'sol', sol()), (ceu, 'lua', lua()), (ceu, 'ceu_gradiente', ceu_gradiente()), (f1, 'feixe', feixe())]
+    saidas += [(f1, 'f1_normal', mapa_normal(saidas[3][2], 14, 8)), (f1, 'f1_roda_normal', mapa_normal(saidas[4][2], 10, 6))]
     for pasta, nome, img in saidas:
         caminho = os.path.join(pasta, nome + '.png')
         img.save(caminho)
