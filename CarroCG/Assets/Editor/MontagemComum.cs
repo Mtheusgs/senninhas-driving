@@ -46,6 +46,16 @@ public static class MontagemComum
         {
             var caminho = AssetDatabase.GUIDToAssetPath(guid);
             var imp = (TextureImporter)AssetImporter.GetAtPath(caminho);
+            if (caminho.EndsWith("_normal.png"))           // normal map: dado linear, não é sprite
+            {
+                imp.textureType = TextureImporterType.Default;
+                imp.sRGBTexture = false;
+                imp.mipmapEnabled = false;
+                imp.wrapMode = TextureWrapMode.Clamp;
+                imp.textureCompression = TextureImporterCompression.Uncompressed;
+                imp.SaveAndReimport();
+                continue;
+            }
             imp.textureType = TextureImporterType.Sprite;
             imp.spriteImportMode = SpriteImportMode.Single;
             imp.filterMode = FilterMode.Bilinear;
@@ -54,10 +64,45 @@ public static class MontagemComum
             imp.alphaIsTransparency = true;
             imp.spritePixelsPerUnit = caminho.Contains("/f1_") ? Ppu
                                     : caminho.EndsWith("estrelas.png") ? 20
-                                    : caminho.EndsWith("terra.png") ? 128 : 200;
+                                    : caminho.EndsWith("terra.png") ? 128
+                                    : caminho.EndsWith("sol.png") || caminho.EndsWith("lua.png") ? 40
+                                    : caminho.EndsWith("ceu_gradiente.png") ? 16
+                                    : caminho.EndsWith("feixe.png") ? 64 : 200;
+            if (caminho.Contains("/f1_"))                   // UV 0-1 iguais às do normal map
+            {
+                var s = new TextureImporterSettings();
+                imp.ReadTextureSettings(s);
+                s.spriteMeshType = SpriteMeshType.FullRect;
+                imp.SetTextureSettings(s);
+            }
             imp.SaveAndReimport();
         }
     }
+
+    // Material salvo em Assets/Materiais (recriado com os valores atuais a cada montagem).
+    public static Material Material(string nome, string shader, System.Action<Material> configurar = null)
+    {
+        Directory.CreateDirectory("Assets/Materiais");
+        string caminho = $"Assets/Materiais/{nome}.mat";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(caminho);
+        if (m == null)
+        {
+            m = new Material(Shader.Find(shader));
+            AssetDatabase.CreateAsset(m, caminho);
+        }
+        m.shader = Shader.Find(shader);
+        configurar?.Invoke(m);
+        EditorUtility.SetDirty(m);
+        AssetDatabase.SaveAssets();
+        return m;
+    }
+
+    static Material Phong(string nome, string normal, float especular, float brilho) => Material(nome, "CarroCG/F1Phong", m =>
+    {
+        m.SetTexture("_NormalMap", AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/Art/F1/{normal}.png"));
+        m.SetFloat("_Especular", especular);
+        m.SetFloat("_Brilho", brilho);
+    });
 
     public static PhysicsMaterial2D Material2D(string nome, float atrito)
     {
@@ -76,13 +121,19 @@ public static class MontagemComum
         return m;
     }
 
-    public static void LuzGlobal()
+    public static Light2D LuzGlobal() => Luz("Luz Global", null, Light2D.LightType.Global, Color.white, 1f, 0);
+
+    static Light2D Luz(string nome, Transform pai, Light2D.LightType tipo, Color cor, float intensidade, float raio)
     {
-        var luz = new GameObject("Luz Global").AddComponent<Light2D>();
+        var luz = new GameObject(nome).AddComponent<Light2D>();
+        if (pai) luz.transform.SetParent(pai, false);
         var so = new SerializedObject(luz);
-        so.FindProperty("m_LightType").intValue = (int)Light2D.LightType.Global;
+        so.FindProperty("m_LightType").intValue = (int)tipo;
         so.ApplyModifiedPropertiesWithoutUndo();
-        luz.intensity = 1f;
+        luz.color = cor;
+        luz.intensity = intensidade;
+        if (raio > 0) luz.pointLightOuterRadius = raio;
+        return luz;
     }
 
     // ---------- F1 ----------
@@ -91,7 +142,8 @@ public static class MontagemComum
     {
         public GameObject raiz, chassi;
         public F1 f1;
-        public SpriteRenderer pintura;
+        public SpriteRenderer pintura, feixe;
+        public Light2D farol, lanterna;
     }
 
     public static PecasF1 CriarF1(PhysicsMaterial2D pneu)
@@ -109,9 +161,9 @@ public static class MontagemComum
         silhueta.sprite = CarregarSprite("Assets/Art/F1/f1_corpo.png");
         chassi.AddComponent<PolygonCollider2D>();
         Object.DestroyImmediate(silhueta);
-        Camada(chassi.transform, "Atras", "f1_atras", 2);
-        var pintura = Camada(chassi.transform, "Pintura", "f1_pintura", 3);
-        Camada(chassi.transform, "Frente", "f1_frente", 4);
+        var atras = Camada(chassi.transform, "Atras", "f1_atras", 2, Phong("F1Atras", "f1_normal", 0.2f, 32));
+        var pintura = Camada(chassi.transform, "Pintura", "f1_pintura", 3, Phong("F1Pintura", "f1_normal", 0.7f, 32));
+        var frente = Camada(chassi.transform, "Frente", "f1_frente", 4, Phong("F1Detalhes", "f1_normal", 0.35f, 32));
 
         var f1 = chassi.AddComponent<F1>();
         chassi.AddComponent<PinturaF1>().pintura = pintura;
@@ -119,6 +171,21 @@ public static class MontagemComum
         var rodaD = NovaRoda("Roda Dianteira", raiz.transform, Largada + RodaD, pneu);
         f1.eixoTraseiro = Eixo(chassi, rodaT, RodaT);
         f1.eixoDianteiro = Eixo(chassi, rodaD, RodaD);
+        chassi.AddComponent<PhongF1>().pecas = new[]
+            { atras, pintura, frente, rodaT.GetComponent<SpriteRenderer>(), rodaD.GetComponent<SpriteRenderer>() };
+
+        // à noite: farol, luz traseira vermelha e o feixe do farol (o CicloDia acende)
+        var farol = Luz("Farol", chassi.transform, Light2D.LightType.Point, Color.white, 0, 7f);
+        farol.transform.localPosition = Local(950, 195);
+        var lanterna = Luz("Lanterna", chassi.transform, Light2D.LightType.Point, new Color(1f, 0.15f, 0.1f), 0, 2.5f);
+        lanterna.transform.localPosition = Local(70, 150);
+        var feixe = new GameObject("Feixe").AddComponent<SpriteRenderer>();
+        feixe.transform.SetParent(chassi.transform, false);
+        feixe.transform.localPosition = Local(950, 195) + new Vector2(2f, 0);
+        feixe.sprite = CarregarSprite("Assets/Art/F1/feixe.png");
+        feixe.sharedMaterial = MaterialUnlit;
+        feixe.sortingOrder = 6;
+        feixe.color = new Color(1, 1, 1, 0);
 
         var capacete = new GameObject("Capacete") { tag = "Player" };
         capacete.transform.SetParent(chassi.transform, false);
@@ -128,16 +195,17 @@ public static class MontagemComum
         cc.radius = 0.3f;   // cobre capacete + halo: de teto no chão, passa da asa traseira (0,47) e encosta
         capacete.AddComponent<SensorCapacete>().f1 = f1;
 
-        return new PecasF1 { raiz = raiz, chassi = chassi, f1 = f1, pintura = pintura };
+        return new PecasF1 { raiz = raiz, chassi = chassi, f1 = f1, pintura = pintura, feixe = feixe, farol = farol, lanterna = lanterna };
     }
 
-    static SpriteRenderer Camada(Transform pai, string nome, string arquivo, int ordem)
+    static SpriteRenderer Camada(Transform pai, string nome, string arquivo, int ordem, Material material)
     {
         var go = new GameObject(nome);
         go.transform.SetParent(pai, false);
         var r = go.AddComponent<SpriteRenderer>();
         r.sprite = CarregarSprite($"Assets/Art/F1/{arquivo}.png");
         r.sortingOrder = ordem;
+        r.sharedMaterial = material;
         return r;
     }
 
@@ -149,6 +217,7 @@ public static class MontagemComum
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = CarregarSprite("Assets/Art/F1/f1_roda.png");
         sr.sortingOrder = 5;
+        sr.sharedMaterial = Phong("F1Roda", "f1_roda_normal", 0.1f, 8);
         var rb = go.AddComponent<Rigidbody2D>();
         rb.mass = 0.25f;
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
@@ -197,7 +266,7 @@ public static class MontagemComum
         return ceu;
     }
 
-    static void Fundo(Transform pai, string nome, string sprite, Vector3 pos, int ordem)
+    static SpriteRenderer Fundo(Transform pai, string nome, string sprite, Vector3 pos, int ordem)
     {
         var go = new GameObject(nome);
         go.transform.SetParent(pai, false);
@@ -206,6 +275,41 @@ public static class MontagemComum
         r.sprite = CarregarSprite(sprite);
         r.sharedMaterial = MaterialUnlit;     // céu não recebe a luz do jogo
         r.sortingOrder = ordem;
+        return r;
+    }
+
+    // Ciclo dia/noite: gradiente do céu, sol, lua e estrelas presos à câmera.
+    public static CicloDia CriarCiclo(Camera cam, Terreno terreno, Light2D luzGlobal, PecasF1 f1)
+    {
+        var ciclo = new GameObject("Ciclo Dia").AddComponent<CicloDia>();
+        ciclo.terreno = terreno;
+        ciclo.cam = cam;
+        ciclo.luzGlobal = luzGlobal;
+        ciclo.farol = f1.farol;
+        ciclo.lanterna = f1.lanterna;
+        ciclo.feixe = f1.feixe;
+        var ceu = new GameObject("Ceu").transform;
+        ceu.SetParent(cam.transform, false);
+        ciclo.ceuGradiente = Fundo(ceu, "Gradiente", "Assets/Art/Ceu/ceu_gradiente.png", new Vector3(0, 4, 25), -55);
+        ciclo.ceuGradiente.transform.localScale = new Vector3(240, 1.6f, 1);
+        ciclo.estrelas = Fundo(ceu, "Estrelas", "Assets/Art/Ceu/estrelas.png", new Vector3(0, 0, 24), -54);
+        ciclo.estrelas.color = new Color(1, 1, 1, 0);
+        ciclo.sol = Fundo(ceu, "Sol", "Assets/Art/Ceu/sol.png", new Vector3(0, 6, 15), -53);
+        ciclo.lua = Fundo(ceu, "Lua", "Assets/Art/Ceu/lua.png", new Vector3(0, -6, 15), -53);
+        return ciclo;
+    }
+
+    public static SombraF1 CriarSombra(PecasF1 f1, Terreno terreno, CicloDia ciclo)
+    {
+        var r = new GameObject("Sombra F1").AddComponent<SpriteRenderer>();
+        r.sharedMaterial = MaterialUnlit;
+        r.sortingOrder = 1;
+        var s = r.gameObject.AddComponent<SombraF1>();
+        s.f1 = f1.f1;
+        s.terreno = terreno;
+        s.ciclo = ciclo;
+        s.render = r;
+        return s;
     }
 
     public static Terreno CriarTerreno(Transform alvo, PhysicsMaterial2D chao)
@@ -213,6 +317,7 @@ public static class MontagemComum
         var terreno = new GameObject("Terreno").AddComponent<Terreno>();
         terreno.alvo = alvo;
         terreno.materialChao = chao;
+        terreno.materialLuz = Material("TerrenoLuz", "CarroCG/TerrenoLuz");
         return terreno;
     }
 

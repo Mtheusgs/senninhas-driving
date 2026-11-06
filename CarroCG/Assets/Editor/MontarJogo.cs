@@ -18,7 +18,7 @@ public static class MontarJogo
         var chao = MontagemComum.Material2D("Chao", 1.0f);
         var cena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-        MontagemComum.LuzGlobal();
+        var luz = MontagemComum.LuzGlobal();
         var f1 = MontagemComum.CriarF1(pneu);
         var cam = MontagemComum.CriarCamera(f1.chassi.GetComponent<Rigidbody2D>(), 7, 11);
         var ceu = MontagemComum.CeuLunar(cam);
@@ -34,9 +34,13 @@ public static class MontarJogo
         config.f1 = f1.f1;
         config.cam = cam;
         config.ceuLunar = ceu;
+        var ciclo = MontagemComum.CriarCiclo(cam, terreno, luz, f1);
+        config.ciclo = ciclo;
+        MontagemComum.CriarSombra(f1, terreno, ciclo);
 
         var partida = new GameObject("Partida").AddComponent<Partida>();
         partida.f1 = f1.f1;
+        partida.terreno = terreno;
         var canvas = MontagemComum.CriarCanvas(cam);
         MontarHud(partida, canvas.transform);
 
@@ -44,6 +48,7 @@ public static class MontarJogo
         aula.terreno = terreno;
         aula.f1 = f1.f1;
         aula.partida = partida;
+        aula.ciclo = ciclo;
         aula.materialLinha = MontagemComum.MaterialUnlit;
         var caixaAula = MontagemComum.Caixa("Rotulo Aula", canvas.transform, new Vector2(0, 0), new Vector2(40, 40),   // canto de baixo: não cobre moedas nem HUD
                                             new Vector2(720, 250), new Color(0, 0, 0, 0.55f));   // não cobre a caixa de distância
@@ -87,6 +92,9 @@ public static class MontarJogo
         aviso.gameObject.AddComponent<CanvasGroup>();
         MontagemComum.Texto("Texto", aviso, Vector2.zero, Vector2.one, 38, TextAlignmentOptions.Center).text = "SEM GASOLINA!";
         p.avisoSemGasolina = aviso.gameObject;
+
+        var caixaAviso = MontagemComum.Caixa("Aviso", raiz, new Vector2(0.5f, 1), new Vector2(0, -240), new Vector2(520, 60), new Color(0, 0, 0, 0.6f));
+        p.textoAviso = MontagemComum.Texto("Texto", caixaAviso, Vector2.zero, Vector2.one, 34, TextAlignmentOptions.Center);
 
         var pausa = MontagemComum.Painel("Pausa", raiz);
         MontagemComum.Texto("Titulo", pausa, new Vector2(0.2f, 0.62f), new Vector2(0.8f, 0.82f), 96, TextAlignmentOptions.Center).text = "PAUSADO";

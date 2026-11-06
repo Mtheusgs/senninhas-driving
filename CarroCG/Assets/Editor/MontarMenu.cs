@@ -20,7 +20,7 @@ public static class MontarMenu
         var cena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
         // Fundo animado: o jogo de verdade, na Terra, com o piloto automático
-        MontagemComum.LuzGlobal();
+        var luz = MontagemComum.LuzGlobal();
         var f1 = MontagemComum.CriarF1(pneu);
         var cam = MontagemComum.CriarCamera(f1.chassi.GetComponent<Rigidbody2D>(), 9, 12);
         cam.GetComponent<CameraSegue>().deslocamento = new Vector2(-8, 4);   // carro à direita, fora da coluna de botões
@@ -30,6 +30,9 @@ public static class MontarMenu
         config.f1 = f1.f1;
         config.cam = cam;
         config.forcarTerra = true;
+        var ciclo = MontagemComum.CriarCiclo(cam, terreno, luz, f1);
+        config.ciclo = ciclo;
+        MontagemComum.CriarSombra(f1, terreno, ciclo);
         config.limiteAmplitude = 4f;          // demo tranquilo: quase nunca trava nem capota
         var piloto = f1.chassi.AddComponent<PilotoAutomatico>();
         piloto.f1 = f1.f1;

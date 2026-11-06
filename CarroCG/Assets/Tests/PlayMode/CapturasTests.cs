@@ -92,4 +92,34 @@ public class CapturasTests
         yield return new WaitForSeconds(5);
         Fotografo.Foto("jogo-lua.png");
     }
+
+    [UnityTest, Explicit]
+    public IEnumerator Luz()
+    {
+        yield return Carregar("Jogo");
+        var f1 = Object.FindFirstObjectByType<F1>();
+        f1.controlePeloTeclado = false;
+        f1.acelerador = 1;
+        yield return new WaitForSeconds(4);                     // sobe para os morros
+        f1.acelerador = 0;
+        yield return new WaitForSeconds(1.5f);
+        var ciclo = Object.FindFirstObjectByType<CicloDia>();
+        var partida = Object.FindFirstObjectByType<Partida>();
+        ciclo.fixo = true;
+        foreach (var (t, nome) in new[] { (0.25f, "luz-dia.png"), (0.47f, "luz-por-do-sol.png"), (0.75f, "luz-noite.png") })
+        {
+            ciclo.tempoFixo = ciclo.Tempo = t;
+            ciclo.Aplicar(true);
+            yield return null;
+            Fotografo.Foto(nome);
+        }
+        ciclo.tempoFixo = ciclo.Tempo = 0.45f;
+        ciclo.Aplicar(true);
+        foreach (var nome in new[] { "luz-flat.png", "luz-gouraud.png", "luz-phong.png" })
+        {
+            partida.ProximoSombreamento();                        // Phong → Flat → Gouraud → Phong
+            yield return null;
+            Fotografo.Foto(nome);
+        }
+    }
 }

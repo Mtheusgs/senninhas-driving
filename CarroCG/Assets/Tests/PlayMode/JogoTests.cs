@@ -162,7 +162,8 @@ public class JogoTests
         var pintura = Object.FindFirstObjectByType<PinturaF1>().pintura;
         Assert.AreEqual(Garagem.Cores[2], pintura.color);
         foreach (var r in f1.GetComponentsInChildren<SpriteRenderer>())
-            if (r != pintura) Assert.AreEqual(Color.white, r.color, $"{r.name} foi tingido");
+            if (r != pintura && r.name != "Feixe")      // o feixe do farol é aceso pelo ciclo (alfa), não pela garagem
+                Assert.AreEqual(Color.white, r.color, $"{r.name} foi tingido");
     }
 
     [UnityTest]
@@ -333,5 +334,143 @@ public class JogoTests
         yield return null;
         Assert.IsTrue(partida.avisoSemGasolina.activeSelf);
         Assert.AreEqual(Partida.Estado.Jogando, partida.EstadoAtual, "terminou com o carro ainda andando");
+    }
+
+    [UnityTest]
+    public IEnumerator Terreno_UsaOShaderDeLuz()
+    {
+        yield return Carregar();
+        yield return null;
+        var r = Object.FindFirstObjectByType<Terreno>().chunks[0].go.GetComponent<SpriteRenderer>();
+        Assert.AreEqual("CarroCG/TerrenoLuz", r.sharedMaterial.shader.name);
+    }
+
+    [UnityTest]
+    public IEnumerator F1_UsaPhongEmTodasAsPecas()
+    {
+        yield return Carregar();
+        foreach (var r in f1.transform.parent.GetComponentsInChildren<SpriteRenderer>())
+            if (r.name != "Feixe") Assert.AreEqual("CarroCG/F1Phong", r.sharedMaterial.shader.name, r.name);
+    }
+
+    [UnityTest, Explicit]   // precisa de GPU: rodado por Tools/capturar.sh
+    public IEnumerator F1Phong_SemCicloNaoFicaPreto()
+    {
+        // precisa de GPU (sem -nographics): rodado por Tools/capturar.sh; no batch sem gráficos fica inconclusivo
+        Assume.That(SystemInfo.graphicsDeviceType != UnityEngine.Rendering.GraphicsDeviceType.Null, "sem GPU");
+        Shader.SetGlobalVector("_DirSol", Vector4.zero);       // como se nenhum CicloDia tivesse rodado
+        var cam = new GameObject("cam-teste").AddComponent<Camera>();
+        var peca = new GameObject("peca").AddComponent<SpriteRenderer>();
+        var rt = new RenderTexture(16, 16, 24);
+        try
+        {
+            cam.orthographic = true; cam.orthographicSize = 2; cam.transform.position = new Vector3(0, 0, -10);
+            cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = Color.black;
+            peca.sprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 1);
+            peca.sharedMaterial = new Material(Shader.Find("CarroCG/F1Phong"));
+            cam.targetTexture = rt; cam.Render(); cam.Render();
+            RenderTexture.active = rt;
+            var tex = new Texture2D(16, 16, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, 16, 16), 0, 0);
+            RenderTexture.active = null;
+            Assert.Greater(tex.GetPixel(8, 8).grayscale, 0.2f, "F1 preto sem a luz global definida");
+        }
+        finally
+        {
+            cam.targetTexture = null;
+            Object.Destroy(cam.gameObject);
+            Object.Destroy(peca.gameObject);
+            rt.Release();
+        }
+        yield return null;
+    }
+
+    [UnityTest]
+    public IEnumerator PhongF1_PassaARotacaoDeCadaPeca()
+    {
+        yield return Carregar();
+        f1.acelerador = 1;
+        yield return new WaitForSeconds(1);                    // rodas giraram, chassi quase reto
+        var roda = f1.eixoTraseiro.connectedBody;
+        roda.angularVelocity = 0;
+        roda.constraints = RigidbodyConstraints2D.FreezeRotation;  // parada: o valor lido é o do último LateUpdate
+        yield return null;
+        yield return null;
+        var mpb = new MaterialPropertyBlock();
+        foreach (var r in new[] { f1.eixoTraseiro.connectedBody.GetComponent<SpriteRenderer>(),
+                                  f1.transform.Find("Pintura").GetComponent<SpriteRenderer>() })
+        {
+            r.GetPropertyBlock(mpb);
+            var rot = mpb.GetVector("_Rotacao");
+            float z = r.transform.eulerAngles.z * Mathf.Deg2Rad;
+            Assert.AreEqual(Mathf.Cos(z), rot.x, 0.05f, r.name);
+            Assert.AreEqual(Mathf.Sin(z), rot.y, 0.05f, r.name);
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator Ciclo_DefineOSolDoShader()
+    {
+        yield return Carregar();
+        Assert.AreEqual(1f, Shader.GetGlobalVector("_DirSol").w);
+    }
+
+    [UnityTest]
+    public IEnumerator TeclaL_TrocaOSombreamentoEAvisa()
+    {
+        yield return Carregar();
+        partida.ProximoSombreamento();
+        Assert.AreEqual(ModoSombreamento.Flat, Object.FindFirstObjectByType<Terreno>().modoSombreamento);
+        Assert.IsTrue(partida.textoAviso.gameObject.activeInHierarchy);
+        StringAssert.Contains("Flat", partida.textoAviso.text);
+    }
+
+    [UnityTest]
+    public IEnumerator Noite_FarolAcesoEEstrelas()
+    {
+        yield return Carregar();
+        var ciclo = Object.FindFirstObjectByType<CicloDia>();
+        ciclo.Tempo = 0.75f; ciclo.Aplicar(true);
+        Assert.Greater(ciclo.farol.intensity, 0.5f);
+        Assert.Greater(ciclo.estrelas.color.a, 0.5f);
+        ciclo.Tempo = 0.25f; ciclo.Aplicar(true);
+        Assert.Less(ciclo.farol.intensity, 0.1f);
+    }
+
+    [UnityTest]
+    public IEnumerator Lua_LuzFixa()
+    {
+        Sessao.Modo = Modo.Lua;
+        yield return Carregar();
+        var ciclo = Object.FindFirstObjectByType<CicloDia>();
+        var antes = ciclo.Atual.dirLuz;
+        yield return new WaitForSeconds(2);
+        Assert.IsTrue(ciclo.fixo && ciclo.lunar);
+        Assert.AreEqual(antes, ciclo.Atual.dirLuz);
+    }
+
+    [UnityTest]
+    public IEnumerator Sombra_DeDiaPertoDoCarroESobreOChao()
+    {
+        yield return Carregar();
+        var ciclo = Object.FindFirstObjectByType<CicloDia>();
+        ciclo.Tempo = 0.25f; ciclo.Aplicar(true);
+        yield return new WaitForSeconds(0.5f);
+        var sombra = Object.FindFirstObjectByType<SombraF1>();
+        Assert.IsTrue(sombra.Visivel);
+        Assert.Less(Mathf.Abs(sombra.Area.center.x - f1.transform.position.x), 3f);
+        Assert.Less(sombra.Area.yMax, f1.transform.position.y);
+    }
+
+    [UnityTest]
+    public IEnumerator ModoAula_MostraNormaisESol()
+    {
+        yield return Carregar();
+        var aula = Object.FindFirstObjectByType<ModoAula>();
+        aula.DefinirAtivo(true);
+        yield return null;
+        var trecho = Object.FindFirstObjectByType<Terreno>().chunks[0].go.transform;
+        Assert.IsNotNull(trecho.Find("Aula/normais"));
+        Assert.IsTrue(GameObject.Find("Aula: sol").GetComponent<LineRenderer>().enabled);
     }
 }
