@@ -22,7 +22,15 @@ public static class MontagemComum
     public static Material MaterialUnlit => AssetDatabase.LoadAssetAtPath<Material>(
         "Packages/com.unity.render-pipelines.universal/Runtime/Materials/Sprite-Unlit-Default.mat");
 
-    public static void DefinirBuild() => EditorBuildSettings.scenes = new[]
+    public static void DefinirBuild()
+    {
+        AssetDatabase.Refresh();    // cena recém-salva precisa estar importada, senão entra no build com GUID zerado
+        EditorBuildSettings.scenes = new EditorBuildSettingsScene[0];   // força regravar o arquivo (mesma lista não é salva)
+        EditorBuildSettings.scenes = Cenas;
+        AssetDatabase.SaveAssets();
+    }
+
+    static EditorBuildSettingsScene[] Cenas => new[]
     {
         new EditorBuildSettingsScene("Assets/Scenes/Menu.unity", true),
         new EditorBuildSettingsScene("Assets/Scenes/Jogo.unity", true),

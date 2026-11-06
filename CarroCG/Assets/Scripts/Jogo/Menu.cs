@@ -43,8 +43,18 @@ public class Menu : MonoBehaviour
         TelaAtual = tela;
         confirmarZerar = false;
         AtualizarTextos();
-        var botao = tela.GetComponentInChildren<Button>();
+        var botao = Preferido(tela);
         if (botao && EventSystem.current) EventSystem.current.SetSelectedGameObject(botao.gameObject);
+    }
+
+    // Garagem: a cor já escolhida. Recorde: Voltar (nunca o botão que apaga). Outras: o primeiro.
+    Button Preferido(GameObject tela)
+    {
+        var botoes = tela.GetComponentsInChildren<Button>();
+        if (botoes.Length == 0) return null;
+        if (tela == garagem) return botoes[Garagem.IndiceEscolhido];
+        if (tela == recorde) return botoes[^1];
+        return botoes[0];
     }
 
     public void AbrirPrincipal() => Abrir(principal);
@@ -64,6 +74,8 @@ public class Menu : MonoBehaviour
     public void EscolherCor(int indice)
     {
         Preferencias.Cor = indice;
+        var demo = FindFirstObjectByType<PinturaF1>();      // carro do fundo também troca de cor
+        if (demo) demo.pintura.color = Garagem.CorEscolhida;
         AtualizarTextos();
     }
 

@@ -190,4 +190,40 @@ public class MenuTests
         menu.AbrirTecnicas();
         Assert.AreEqual(TecnicasCG.Texto(), menu.textoTecnicas.text);
     }
+
+    [UnityTest]
+    public IEnumerator Recorde_AbreComVoltarSelecionado()
+    {
+        yield return Carregar("Menu");
+        menu.AbrirRecorde();
+        Assert.AreEqual("Voltar", EventSystem.current.currentSelectedGameObject.GetComponentInChildren<TMP_Text>().text);
+    }
+
+    [UnityTest]
+    public IEnumerator Garagem_SelecionaACorEscolhida()
+    {
+        Preferencias.Cor = 1;
+        yield return Carregar("Menu");
+        menu.AbrirGaragem();
+        Assert.AreEqual(Garagem.Nomes[1], EventSystem.current.currentSelectedGameObject.name);
+    }
+
+    [UnityTest]
+    public IEnumerator Garagem_CarroDoFundoMudaDeCor()
+    {
+        yield return Carregar("Menu");
+        menu.EscolherCor(2);
+        Assert.AreEqual(Garagem.Cores[2], Object.FindFirstObjectByType<PinturaF1>().pintura.color);
+    }
+
+    [UnityTest]
+    public IEnumerator Demo_RecomecarLevaACameraJunto()
+    {
+        yield return Carregar("Menu");
+        yield return new WaitForSeconds(6);
+        Object.FindFirstObjectByType<PilotoAutomatico>().Recomecar();
+        yield return null;
+        var f1 = Object.FindFirstObjectByType<F1>();
+        Assert.Less(Mathf.Abs(Camera.main.transform.position.x - f1.transform.position.x), 12f, "câmera ficou para trás e atravessou o mundo");
+    }
 }

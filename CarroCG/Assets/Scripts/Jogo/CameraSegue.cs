@@ -20,6 +20,23 @@ public class CameraSegue : MonoBehaviour
 
     void LateUpdate()
     {
+        var (destino, zoom) = Alvo();
+        transform.position = Vector3.SmoothDamp(transform.position, destino, ref vel, suavidade);
+        cam.orthographicSize = Mathf.SmoothDamp(cam.orthographicSize, zoom, ref velZoom, suavidadeZoom);
+    }
+
+    // Vai direto para o alvo, sem suavizar (o demo do menu recomeçou na largada).
+    public void Encaixar()
+    {
+        var (destino, zoom) = Alvo();
+        transform.position = destino;
+        cam.orthographicSize = zoom;
+        vel = Vector3.zero;
+        velZoom = 0;
+    }
+
+    (Vector3, float) Alvo()
+    {
         Vector2 v = alvo.linearVelocity;
         Vector2 frente = Vector2.ClampMagnitude(v * olharAFrente, olharMax);
         Vector3 destino = alvo.position + deslocamento + frente;
@@ -27,10 +44,11 @@ public class CameraSegue : MonoBehaviour
         float zoom = Mathf.Lerp(zoomMin, zoomMax, Mathf.Clamp01(v.magnitude / velocidadeZoomMax));
         if (enquadrar is Rect r)
         {
+            // a janela inteira e também o carro, com folga acima dele para não ficar atrás do HUD
+            r.yMax = Mathf.Max(r.yMax, alvo.position.y + 8);
             destino.y = r.center.y;
             zoom = Mathf.Max(zoom, r.height / 2 + 1);
         }
-        transform.position = Vector3.SmoothDamp(transform.position, destino, ref vel, suavidade);
-        cam.orthographicSize = Mathf.SmoothDamp(cam.orthographicSize, zoom, ref velZoom, suavidadeZoom);
+        return (destino, zoom);
     }
 }

@@ -107,19 +107,13 @@ public class JogoTests
     {
         bool tinha = PlayerPrefs.HasKey("recorde.Terra");
         float antes = PlayerPrefs.GetFloat("recorde.Terra");
-        PlayerPrefs.SetFloat("recorde.Terra", 5);
-        try
-        {
-            yield return Carregar();
-            f1.acelerador = 1;
-            yield return new WaitForSeconds(3);
-            partida.Terminar("teste");
-            Assert.AreEqual(5f, PlayerPrefs.GetFloat("recorde.Terra"));
-        }
-        finally
-        {
-            if (tinha) PlayerPrefs.SetFloat("recorde.Terra", antes); else PlayerPrefs.DeleteKey("recorde.Terra");
-        }
+        yield return Carregar();
+        f1.acelerador = 1;
+        yield return new WaitForSeconds(3);
+        partida.Terminar("teste");
+        Assert.AreEqual(tinha, PlayerPrefs.HasKey("recorde.Terra"));
+        Assert.AreEqual(antes, PlayerPrefs.GetFloat("recorde.Terra"));
+        Assert.Greater(PlayerPrefs.GetFloat("teste.recorde.Terra"), 0f, "o recorde da partida de teste não foi para a chave de teste");
     }
 
     static Button BotaoComTexto(string texto) =>
@@ -296,5 +290,19 @@ public class JogoTests
         aula.DefinirAtivo(false);
         yield return new WaitForSeconds(3);
         Assert.Less(cam.orthographicSize, 12f, "a câmera não voltou ao zoom do jogo");
+    }
+
+    [UnityTest]
+    public IEnumerator ModoAula_CarroNoArContinuaNaTela()
+    {
+        yield return Carregar();
+        var aula = Object.FindFirstObjectByType<ModoAula>();
+        aula.DefinirAtivo(true);
+        yield return new WaitForSeconds(2);
+        foreach (var corpo in f1.transform.parent.GetComponentsInChildren<Rigidbody2D>())
+            corpo.position += Vector2.up * 8;
+        yield return new WaitForSeconds(0.6f);
+        float y = Camera.main.WorldToViewportPoint(f1.transform.position).y;
+        Assert.That(y, Is.InRange(0.05f, 0.82f), "carro fora da tela ou atrás do HUD no modo aula");
     }
 }

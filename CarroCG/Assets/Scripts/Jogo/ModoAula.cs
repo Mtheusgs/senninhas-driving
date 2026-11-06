@@ -63,7 +63,7 @@ public class ModoAula : MonoBehaviour
             var atual = terreno.chunks.Find(k => k.janela.xMin <= rb.position.x && rb.position.x < k.janela.xMax);
             if (atual != null && segue)    // do fundo do polígono original (pedaço cortado) até acima da superfície (espaço do HUD)
                 segue.enquadrar = Rect.MinMaxRect(atual.janela.xMin, atual.poligonoOriginal.Min(p => p.y) - 1,
-                                                  atual.janela.xMax, atual.janela.yMax + 5);
+                                                  atual.janela.xMax, atual.janela.yMax + 7);
         }
     }
 

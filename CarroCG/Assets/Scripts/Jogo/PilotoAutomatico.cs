@@ -47,5 +47,7 @@ public class PilotoAutomatico : MonoBehaviour
             corpos[i].linearVelocity = Vector2.zero;
             corpos[i].angularVelocity = 0;
         }
+        var segue = Camera.main ? Camera.main.GetComponent<CameraSegue>() : null;
+        if (segue) segue.Encaixar();
     }
 }
