@@ -473,4 +473,43 @@ public class JogoTests
         Assert.IsNotNull(trecho.Find("Aula/normais"));
         Assert.IsTrue(GameObject.Find("Aula: sol").GetComponent<LineRenderer>().enabled);
     }
+
+    [UnityTest]
+    public IEnumerator Lua_CeuPretoSemGradienteNemAstrosDaTerra()
+    {
+        Sessao.Modo = Modo.Lua;
+        yield return Carregar();
+        yield return null;
+        var ciclo = Object.FindFirstObjectByType<CicloDia>();
+        Assert.IsFalse(ciclo.ceuGradiente.enabled, "gradiente da Terra deixa o céu lunar cinza");
+        Assert.IsFalse(ciclo.sol.enabled);
+        Assert.IsFalse(ciclo.lua.enabled);
+        Assert.IsFalse(ciclo.estrelas.enabled, "a Lua já tem o próprio céu estrelado");
+        Assert.AreEqual(Color.black, Camera.main.backgroundColor);
+    }
+
+    [UnityTest]
+    public IEnumerator Sombra_EmLadeiraNaoCorta()
+    {
+        yield return Carregar();
+        var sombra = Object.FindFirstObjectByType<SombraF1>();
+        sombra.Altura = x => x * 0.8f - 9.6f;                  // ladeira de ~39° passando sob o carro (x≈12)
+        yield return null;
+        yield return null;
+        Assert.IsTrue(sombra.Visivel);
+        float alturaDaTextura = sombra.render.sprite.rect.height / sombra.render.sprite.pixelsPerUnit;
+        Assert.GreaterOrEqual(alturaDaTextura, sombra.Area.height, "a faixa da sombra não cabe na textura (corta em ladeira)");
+    }
+
+    [UnityTest]
+    public IEnumerator SolAoMeioDia_AbaixoDoHud()
+    {
+        yield return Carregar();
+        var ciclo = Object.FindFirstObjectByType<CicloDia>();
+        ciclo.fixo = true;
+        ciclo.tempoFixo = ciclo.Tempo = 0.25f;
+        ciclo.Aplicar(true);
+        yield return null;
+        Assert.Less(Camera.main.WorldToViewportPoint(ciclo.sol.transform.position).y, 0.78f, "sol atrás da caixa de distância");
+    }
 }

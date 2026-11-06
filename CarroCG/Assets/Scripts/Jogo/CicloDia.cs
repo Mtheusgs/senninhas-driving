@@ -15,6 +15,7 @@ public class CicloDia : MonoBehaviour
     public float fatorAmbienteLunar = 0.35f;
     public float intervaloTerreno = 0.5f;
     public float raioArco = 8f;
+    public float alturaArco = 3.5f;
 
     public Terreno terreno;
     public Light2D luzGlobal, farol, lanterna;
@@ -58,7 +59,14 @@ public class CicloDia : MonoBehaviour
             luzGlobal.color = e.corLuz;
             luzGlobal.intensity = Mathf.Lerp(0.45f, 1f, 1 - e.noite);
         }
-        if (!lunar)
+        if (lunar)                                     // a Lua tem o próprio céu (preto, estrelas, Terra)
+        {
+            if (ceuGradiente) ceuGradiente.enabled = false;
+            if (estrelas) estrelas.enabled = false;
+            if (sol) sol.enabled = false;
+            if (lua) lua.enabled = false;
+        }
+        else
         {
             if (cam) cam.backgroundColor = e.corCeuHorizonte;
             if (ceuGradiente) ceuGradiente.color = e.corCeuTopo;
@@ -77,11 +85,11 @@ public class CicloDia : MonoBehaviour
         }
     }
 
-    // Sol e lua num arco em volta da câmera; somem abaixo do horizonte.
+    // Sol e lua num arco achatado em volta da câmera (abaixo da faixa do HUD); somem abaixo do horizonte.
     void Posicionar(SpriteRenderer astro, Vector2 dir)
     {
         if (!astro) return;
         astro.enabled = dir.y > -0.1f;
-        astro.transform.localPosition = new Vector3(dir.x * raioArco * 1.6f, dir.y * raioArco - 2, 15);
+        astro.transform.localPosition = new Vector3(dir.x * raioArco * 1.6f, dir.y * alturaArco, 15);
     }
 }

@@ -29,6 +29,6 @@ public class ConfigurarPartida : MonoBehaviour
         cam.backgroundColor = p.ceu;
         if (ceuLunar) ceuLunar.SetActive(p.ceuLunar);
         if (ciclo && p.ceuLunar) { ciclo.fixo = true; ciclo.lunar = true; }      // Lua: sol parado, sombra dura
-        if (ciclo && forcarTerra) { ciclo.fixo = true; ciclo.tempoFixo = 0.2f; } // menu: sempre de dia
+        if (ciclo && forcarTerra) { ciclo.fixo = true; ciclo.tempoFixo = 0.12f; } // menu: manhã (sol de lado, longe do título)
     }
 }

@@ -16,6 +16,7 @@ public class SombraF1 : MonoBehaviour
     public float raioRoda = 0.36f;
     public byte alfaMax = 110, alfaLunar = 150;
 
+    public System.Func<float, float> Altura;     // superfície usada pela sombra (padrão: terreno.AlturaEm)
     public bool Visivel => render && render.enabled;
     public Rect Area { get; private set; }
 
@@ -26,17 +27,31 @@ public class SombraF1 : MonoBehaviour
 
     void Start()
     {
-        tex = new Texture2D(largura, altura, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "Sombra" };
-        limpo = new Color32[largura * altura];
-        px = new Color32[largura * altura];
-        render.sprite = Sprite.Create(tex, new Rect(0, 0, largura, altura), Vector2.zero, ppu);
+        CriarTextura();
         contorno = f1.GetComponent<PolygonCollider2D>();
+        Altura ??= terreno.AlturaEm;
         rodas = new[] { f1.eixoTraseiro.connectedBody, f1.eixoDianteiro.connectedBody };
     }
 
     void OnDestroy()
     {
         if (tex) Destroy(tex);
+    }
+
+    void Redimensionar(int novaAltura)
+    {
+        altura = novaAltura;
+        if (render.sprite) Destroy(render.sprite);
+        if (tex) Destroy(tex);
+        CriarTextura();
+    }
+
+    void CriarTextura()
+    {
+        tex = new Texture2D(largura, altura, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "Sombra" };
+        limpo = new Color32[largura * altura];
+        px = new Color32[largura * altura];
+        render.sprite = Sprite.Create(tex, new Rect(0, 0, largura, altura), Vector2.zero, ppu);
     }
 
     void LateUpdate()
@@ -46,19 +61,21 @@ public class SombraF1 : MonoBehaviour
         for (int i = 0; i < contorno.pathCount; i++)
             foreach (var p in contorno.GetPath(i)) pontos.Add(f1.transform.TransformPoint(p));
         foreach (var r in rodas) pontos.Add(r.position + Vector2.down * raioRoda);
-        var faixa = alfa < 2 ? null : Sombra.Faixa(pontos, ciclo.Atual.dirLuz, terreno.AlturaEm, largura / ppu - 0.5f);
+        var faixa = alfa < 2 ? null : Sombra.Faixa(pontos, ciclo.Atual.dirLuz, Altura, largura / ppu - 0.5f);
         if (faixa == null) { render.enabled = false; return; }
 
         var (x0, x1) = faixa.Value;
         var superficie = new List<Vector2>();
         for (int k = 0; k <= 12; k++)
         {
-            float x = Mathf.Lerp(x0, x1, k / 12f), y = terreno.AlturaEm(x);
+            float x = Mathf.Lerp(x0, x1, k / 12f), y = Altura(x);
             if (!float.IsNaN(y)) superficie.Add(new Vector2(x, y));
         }
         if (superficie.Count < 2) { render.enabled = false; return; }
 
         var origem = new Vector2(x0 - 0.1f, superficie.Min(p => p.y) - espessura - 0.1f);
+        int precisa = Mathf.Min(1024, Mathf.CeilToInt((superficie.Max(p => p.y) + 0.1f - origem.y) * ppu));
+        if (precisa > altura) Redimensionar(precisa);            // ladeira: a faixa sobe mais que a textura
         Area = Rect.MinMaxRect(x0, origem.y, x1, superficie.Max(p => p.y) + 0.02f);
         var poligono = superficie.Concat(Enumerable.Reverse(superficie).Select(p => p + Vector2.down * espessura))
                                  .Select(p => Vector2Int.RoundToInt((p - origem) * ppu)).ToArray();

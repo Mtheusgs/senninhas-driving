@@ -68,4 +68,23 @@ public class SombreamentoTests
         Assert.Greater(luz[5].r, luz[15].r, "água virada para a luz deveria ser mais clara");
         Assert.AreEqual((Color32)new Color(0.2f, 0.2f, 0.2f), luz[15], "água de costas: só ambiente");
     }
+
+    [Test]
+    public void GouraudEPhong_DiferemNoBrilhoEspecular()
+    {
+        // com especular, interpolar a intensidade (Gouraud) ou a normal (Phong) dá resultados visivelmente diferentes
+        float maior = 0;
+        for (int a = 0; a <= 180; a += 2)
+        {
+            var l = new Vector2(Mathf.Cos(a * Mathf.Deg2Rad), Mathf.Sin(a * Mathf.Deg2Rad));
+            for (float x = 0.05f; x < 2; x += 0.05f)
+                maior = Mathf.Max(maior, Mathf.Abs(Sombreamento.EspecularEm(ModoSombreamento.Phong, Telhado, x, l, 12)
+                                                 - Sombreamento.EspecularEm(ModoSombreamento.Gouraud, Telhado, x, l, 12)));
+        }
+        Assert.Greater(maior, 0.2f);
+    }
+
+    [Test]
+    public void Especular_ZeroNaFaceDeCostas() =>
+        Assert.AreEqual(0f, Sombreamento.EspecularEm(ModoSombreamento.Flat, Telhado, 1.5f, Diagonal, 12), 1e-6);
 }
