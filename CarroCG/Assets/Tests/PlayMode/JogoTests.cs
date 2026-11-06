@@ -305,4 +305,33 @@ public class JogoTests
         float y = Camera.main.WorldToViewportPoint(f1.transform.position).y;
         Assert.That(y, Is.InRange(0.05f, 0.82f), "carro fora da tela ou atrás do HUD no modo aula");
     }
+
+    [UnityTest]
+    public IEnumerator PresoNaPonta_TerminaJogo()
+    {
+        yield return Carregar();
+        foreach (var corpo in f1.transform.parent.GetComponentsInChildren<Rigidbody2D>())
+        {
+            corpo.position += Vector2.up * 4;        // longe do chão: o capacete não encosta
+            corpo.constraints = RigidbodyConstraints2D.FreezeAll;
+        }
+        var rb = f1.GetComponent<Rigidbody2D>();
+        rb.constraints = RigidbodyConstraints2D.None;
+        rb.rotation = 120;
+        rb.constraints = RigidbodyConstraints2D.FreezeAll;
+        yield return new WaitForSeconds(2.5f);
+        Assert.AreEqual(Partida.Estado.Fim, partida.EstadoAtual, "carro preso/virado e o jogo não terminou");
+    }
+
+    [UnityTest]
+    public IEnumerator SemCombustivel_MostraAvisoEnquantoNoEmbalo()
+    {
+        yield return Carregar();
+        f1.acelerador = 1;
+        yield return new WaitForSeconds(2);
+        partida.combustivel.Consumir(10000, 0);
+        yield return null;
+        Assert.IsTrue(partida.avisoSemGasolina.activeSelf);
+        Assert.AreEqual(Partida.Estado.Jogando, partida.EstadoAtual, "terminou com o carro ainda andando");
+    }
 }

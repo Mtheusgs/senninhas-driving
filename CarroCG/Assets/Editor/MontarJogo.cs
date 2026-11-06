@@ -83,6 +83,11 @@ public static class MontarJogo
         p.textoDistancia = MontagemComum.Texto("Metros", caixaDist, new Vector2(0, 0.35f), Vector2.one, 60, TextAlignmentOptions.Center);
         p.textoRecorde = MontagemComum.Texto("Recorde", caixaDist, Vector2.zero, new Vector2(1, 0.4f), 26, TextAlignmentOptions.Center);
 
+        var aviso = MontagemComum.Caixa("Sem gasolina", raiz, new Vector2(0.5f, 1), new Vector2(0, -165), new Vector2(440, 64), new Color(0.75f, 0.1f, 0.1f, 0.85f));
+        aviso.gameObject.AddComponent<CanvasGroup>();
+        MontagemComum.Texto("Texto", aviso, Vector2.zero, Vector2.one, 38, TextAlignmentOptions.Center).text = "SEM GASOLINA!";
+        p.avisoSemGasolina = aviso.gameObject;
+
         var pausa = MontagemComum.Painel("Pausa", raiz);
         MontagemComum.Texto("Titulo", pausa, new Vector2(0.2f, 0.62f), new Vector2(0.8f, 0.82f), 96, TextAlignmentOptions.Center).text = "PAUSADO";
         var colPausa = MontagemComum.Coluna(pausa, new Vector2(0.5f, 0.42f), 480);

@@ -11,7 +11,6 @@ public class Menu : MonoBehaviour
     public TMP_Text textoTecnicas, textoRecorde, textoZerar, textoTelaCheia, textoModoAula, textoQualidade, textoCor;
     public Image previaPintura;
     public RectTransform previaCarro;
-    public float velocidadeVitrine = 1.2f;
 
     public GameObject TelaAtual { get; private set; }
     bool confirmarZerar;
@@ -29,12 +28,6 @@ public class Menu : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape) && TelaAtual != principal) Abrir(principal);
-        if (TelaAtual == garagem)
-        {
-            var s = previaCarro.localScale;      // vitrine: escala x de +1 a -1 (espelhamento ao passar pelo meio)
-            s.x = Mathf.Cos(Time.time * velocidadeVitrine);
-            previaCarro.localScale = s;
-        }
     }
 
     void Abrir(GameObject tela)

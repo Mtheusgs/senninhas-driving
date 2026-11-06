@@ -12,11 +12,12 @@ public class Partida : MonoBehaviour
     public F1 f1;
     public Combustivel combustivel = new();
     public float galaoQuantidade = 45f;
+    public DetectorCapotagem capotagem = new();
 
     [Header("HUD")]
     public RectTransform barraCombustivel;
     public TMP_Text textoMoedas, textoDistancia, textoRecorde, textoFim;
-    public GameObject painelPausa, painelFim;
+    public GameObject painelPausa, painelFim, avisoSemGasolina;
 
     public Estado EstadoAtual { get; private set; }
     public int Moedas { get; private set; }
@@ -44,6 +45,7 @@ public class Partida : MonoBehaviour
         x0 = f1.transform.position.x;
         painelPausa.SetActive(false);
         painelFim.SetActive(false);
+        avisoSemGasolina.SetActive(false);
         AtualizarHud();
     }
 
@@ -57,7 +59,8 @@ public class Partida : MonoBehaviour
         combustivel.Consumir(Time.deltaTime, f1.motorLigado ? f1.acelerador : 0);
         f1.motorLigado = !combustivel.Vazio;
         Distancia = Mathf.Max(Distancia, f1.transform.position.x - x0);
-        if (combustivel.VerificarPane(Time.deltaTime, f1.VelocidadeX)) Terminar("Sem combustível");
+        if (capotagem.Atualizar(Time.deltaTime, f1.transform.eulerAngles.z, f1.NoChao, f1.Velocidade)) { Terminar("Capotou!"); return; }
+        if (combustivel.VerificarPane(Time.deltaTime, f1.Velocidade, f1.NoChao)) Terminar("Sem combustível");
         AtualizarHud();
     }
 
@@ -129,5 +132,9 @@ public class Partida : MonoBehaviour
         textoMoedas.text = $"Moedas  {Moedas}";
         textoDistancia.text = $"{Distancia:0} m";
         textoRecorde.text = $"Recorde {Preferencias.Recorde(Sessao.Modo):0} m";
+        bool semGasolina = combustivel.Vazio && EstadoAtual == Estado.Jogando;     // no embalo: avisa piscando
+        avisoSemGasolina.SetActive(semGasolina);
+        if (semGasolina && avisoSemGasolina.TryGetComponent(out CanvasGroup g))
+            g.alpha = 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 8f);
     }
 }

@@ -27,10 +27,11 @@ public class Combustivel
 
     public void Abastecer(float qtd) => Atual = Mathf.Min(maximo, Atual + qtd);
 
-    // Fim de jogo por pane seca: sem combustível e parado por tempoParadoParaPane segundos seguidos.
-    public bool VerificarPane(float dt, float velocidade)
+    // Fim de jogo por pane seca: sem combustível, no chão e parado por tempoParadoParaPane segundos seguidos.
+    // velocidade = módulo (numa subida a velocidade horizontal é baixa mas o carro ainda anda).
+    public bool VerificarPane(float dt, float velocidade, bool noChao = true)
     {
-        parado = Vazio && Mathf.Abs(velocidade) < velocidadeParado ? parado + dt : 0;
+        parado = Vazio && noChao && Mathf.Abs(velocidade) < velocidadeParado ? parado + dt : 0;   // no ar ainda é embalo
         return parado >= tempoParadoParaPane;
     }
 }

@@ -68,4 +68,12 @@ public class CombustivelTests
     {
         Assert.IsFalse(Novo().VerificarPane(10, 0));
     }
+
+    [Test]
+    public void Pane_NoArNaoConta()
+    {
+        var c = Novo();
+        c.Consumir(1000, 0);
+        Assert.IsFalse(c.VerificarPane(5, 0, noChao: false));
+    }
 }

@@ -13,6 +13,8 @@ public class PilotoAutomatico : MonoBehaviour
     float[] rotacoes;
     float parado;
 
+    public int Recomecos { get; private set; }
+
     void Start()
     {
         f1.controlePeloTeclado = false;
@@ -37,6 +39,7 @@ public class PilotoAutomatico : MonoBehaviour
 
     public void Recomecar()
     {
+        Recomecos++;
         parado = 0;
         terreno.Reiniciar();
         for (int i = 0; i < corpos.Length; i++)

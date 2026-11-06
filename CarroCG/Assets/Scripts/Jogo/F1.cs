@@ -16,6 +16,7 @@ public class F1 : MonoBehaviour
     public event System.Action Capotou;
     public bool NoChao { get; private set; }
     public float VelocidadeX => rb.linearVelocity.x;
+    public float Velocidade => rb.linearVelocity.magnitude;
 
     Rigidbody2D rb;
     Collider2D rodaT, rodaD;

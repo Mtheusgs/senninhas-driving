@@ -226,4 +226,22 @@ public class MenuTests
         var f1 = Object.FindFirstObjectByType<F1>();
         Assert.Less(Mathf.Abs(Camera.main.transform.position.x - f1.transform.position.x), 12f, "câmera ficou para trás e atravessou o mundo");
     }
+
+    [UnityTest]
+    public IEnumerator Garagem_CarroParadoNaVitrine()
+    {
+        yield return Carregar("Menu");
+        menu.AbrirGaragem();
+        yield return new WaitForSeconds(1);
+        Assert.AreEqual(1f, menu.previaCarro.localScale.x, 1e-4);
+    }
+
+    [UnityTest]
+    public IEnumerator Demo_NaoFicaRecomecando()
+    {
+        yield return Carregar("Menu");
+        var piloto = Object.FindFirstObjectByType<PilotoAutomatico>();
+        yield return new WaitForSeconds(45);
+        Assert.LessOrEqual(piloto.Recomecos, 1, "o demo do menu recomeçou várias vezes (cortes no fundo)");
+    }
 }

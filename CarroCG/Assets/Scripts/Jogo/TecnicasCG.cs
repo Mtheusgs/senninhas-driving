@@ -31,7 +31,7 @@ public static class TecnicasCG
                                        Breve("sombra projetada do F1")),
         T("Translação", Sim("movimento do carro"), Sim("moedas e galões sobre a curva"), Breve("parallax")),
         T("Rotação", Sim("carro inclinando e rodas girando"), Sim("giro no ar"), Breve("wireframe 3D da intro")),
-        T("Espelhamento", Sim("emenda C1 do terreno (P1 = 2·P3 - P2)"), Sim("vitrine da garagem"), Breve("reflexo no lago")),
+        T("Espelhamento", Sim("emenda C1 do terreno (P1 = 2·P3 - P2)"), Breve("reflexo no lago")),
     };
 
     public static string Texto() => string.Join("\n", Lista.Select(t =>
