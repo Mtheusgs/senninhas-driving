@@ -67,26 +67,36 @@ public static class Raster
     public static Vector2 BezierJoin(Vector2 p2Anterior, Vector2 p3Anterior) => 2 * p3Anterior - p2Anterior;
 
     // Recorte de polígono de Sutherland–Hodgman: recorta contra cada borda do retângulo, em sequência.
-    public static List<Vector2> ClipPolygon(IReadOnlyList<Vector2> poly, Rect r)
+    public static List<Vector2> ClipPolygon(IReadOnlyList<Vector2> poly, Rect r) =>
+        Recortar(poly.Select(p => new Vector4(p.x, p.y)).ToList(), r).Select(v => new Vector2(v.x, v.y)).ToList();
+
+    // Variante com atributo: a UV de cada vértice novo é interpolada junto com a posição (reflexo no lago).
+    public static List<Vector2> ClipPolygon(IReadOnlyList<Vector2> poly, Rect r, IReadOnlyList<Vector2> uv,
+                                            out List<Vector2> uvRecortado)
     {
-        var p = new List<Vector2>(poly);
-        p = ClipBorda(p, v => v.x >= r.xMin, (a, b) => Corte(a, b, (r.xMin - a.x) / (b.x - a.x)));
-        p = ClipBorda(p, v => v.x <= r.xMax, (a, b) => Corte(a, b, (r.xMax - a.x) / (b.x - a.x)));
-        p = ClipBorda(p, v => v.y >= r.yMin, (a, b) => Corte(a, b, (r.yMin - a.y) / (b.y - a.y)));
-        p = ClipBorda(p, v => v.y <= r.yMax, (a, b) => Corte(a, b, (r.yMax - a.y) / (b.y - a.y)));
+        var p = Recortar(poly.Select((v, i) => new Vector4(v.x, v.y, uv[i].x, uv[i].y)).ToList(), r);
+        uvRecortado = p.Select(v => new Vector2(v.z, v.w)).ToList();
+        return p.Select(v => new Vector2(v.x, v.y)).ToList();
+    }
+
+    // xy = posição, zw = atributo.
+    static List<Vector4> Recortar(List<Vector4> p, Rect r)
+    {
+        p = ClipBorda(p, v => v.x >= r.xMin, (a, b) => Vector4.Lerp(a, b, (r.xMin - a.x) / (b.x - a.x)));
+        p = ClipBorda(p, v => v.x <= r.xMax, (a, b) => Vector4.Lerp(a, b, (r.xMax - a.x) / (b.x - a.x)));
+        p = ClipBorda(p, v => v.y >= r.yMin, (a, b) => Vector4.Lerp(a, b, (r.yMin - a.y) / (b.y - a.y)));
+        p = ClipBorda(p, v => v.y <= r.yMax, (a, b) => Vector4.Lerp(a, b, (r.yMax - a.y) / (b.y - a.y)));
         return p;
     }
 
-    static Vector2 Corte(Vector2 a, Vector2 b, float t) => a + (b - a) * t;
-
     // Uma borda: para cada aresta (anterior → atual), emite a interseção ao cruzar a borda e o vértice se estiver dentro.
-    static List<Vector2> ClipBorda(List<Vector2> entrada, System.Func<Vector2, bool> dentro,
-                                   System.Func<Vector2, Vector2, Vector2> intersecao)
+    static List<Vector4> ClipBorda(List<Vector4> entrada, System.Func<Vector4, bool> dentro,
+                                   System.Func<Vector4, Vector4, Vector4> intersecao)
     {
-        var saida = new List<Vector2>();
+        var saida = new List<Vector4>();
         for (int i = 0; i < entrada.Count; i++)
         {
-            Vector2 atual = entrada[i], anterior = entrada[(i + entrada.Count - 1) % entrada.Count];
+            Vector4 atual = entrada[i], anterior = entrada[(i + entrada.Count - 1) % entrada.Count];
             bool dAtual = dentro(atual), dAnterior = dentro(anterior);
             if (dAtual)
             {
@@ -97,6 +107,9 @@ public static class Raster
         }
         return saida;
     }
+
+    // Reflexão em torno da reta horizontal y = h (matriz [1 0 0; 0 -1 2h]).
+    public static Vector2 Refletir(Vector2 p, float h) => new(p.x, 2 * h - p.y);
 
     // Recorte de linha de Cohen–Sutherland. Código de região: 1 esquerda, 2 direita, 4 baixo, 8 cima.
     public static int CodigoRegiao(Vector2 p, Rect r) =>

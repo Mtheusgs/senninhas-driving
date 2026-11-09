@@ -193,4 +193,19 @@ public class RasterTests
         Assert.AreEqual(new Vector2(256, 96), Raster.JanelaViewport(new(10, 5), J, v));
         Assert.AreEqual(new Vector2(128, 48), Raster.JanelaViewport(new(5, 2.5f), J, v));
     }
+
+    [Test]
+    public void Refletir_EspelhaEmH() => Assert.AreEqual(new Vector2(3, -3), Raster.Refletir(new Vector2(3, 5), 1));
+
+    [Test]
+    public void ClipPolygonUV_InterpolaNaBorda()
+    {
+        var q = new Vector2[] { new(0, 0), new(2, 0), new(2, 2), new(0, 2) };
+        var uv = new Vector2[] { new(0, 0), new(1, 0), new(1, 1), new(0, 1) };
+        var p = Raster.ClipPolygon(q, new Rect(0, 0, 1, 2), uv, out var uv2);
+        Assert.AreEqual(p.Count, uv2.Count);
+        for (int i = 0; i < p.Count; i++)
+            if (Mathf.Approximately(p[i].x, 1)) Assert.AreEqual(0.5f, uv2[i].x, 1e-5f);
+        Assert.IsTrue(p.Any(v => Mathf.Approximately(v.x, 1)));
+    }
 }
