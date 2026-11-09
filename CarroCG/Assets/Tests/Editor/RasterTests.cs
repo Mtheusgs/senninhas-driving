@@ -144,4 +144,53 @@ public class RasterTests
     {
         Assert.IsEmpty(Raster.ClipPolygon(new List<Vector2>(), Janela));
     }
+
+    static readonly Rect J = Rect.MinMaxRect(0, 0, 10, 5);
+
+    [Test]
+    public void CodigoRegiao_BitsPorLado()
+    {
+        Assert.AreEqual(0, Raster.CodigoRegiao(new(5, 2), J));
+        Assert.AreEqual(1, Raster.CodigoRegiao(new(-1, 2), J));
+        Assert.AreEqual(2 | 8, Raster.CodigoRegiao(new(11, 6), J));
+    }
+
+    [Test]
+    public void ClipLine_AceitacaoTrivial()
+    {
+        Assert.IsTrue(Raster.ClipLine(new(1, 1), new(9, 4), J, out var a, out var b));
+        Assert.AreEqual(new Vector2(1, 1), a);
+        Assert.AreEqual(new Vector2(9, 4), b);
+    }
+
+    [Test]
+    public void ClipLine_RejeicaoTrivial() => Assert.IsFalse(Raster.ClipLine(new(-5, 1), new(-1, 4), J, out _, out _));
+
+    [Test]
+    public void ClipLine_CruzaDuasBordas()
+    {
+        Assert.IsTrue(Raster.ClipLine(new(-2, -1), new(12, 6), J, out var a, out var b));   // y = 0,5x
+        Assert.AreEqual(0f, a.x, 1e-4); Assert.AreEqual(0f, a.y, 1e-4);
+        Assert.AreEqual(10f, b.x, 1e-4); Assert.AreEqual(5f, b.y, 1e-4);
+    }
+
+    [Test]
+    public void ClipLine_ForaPassandoPeloCanto_Rejeita() => Assert.IsFalse(Raster.ClipLine(new(-1, 4.5f), new(1, 7), J, out _, out _));   // y = 1,25x + 5,75: passa acima do canto (0,5)
+
+    [Test]
+    public void ClipLine_SobreABorda()
+    {
+        Assert.IsTrue(Raster.ClipLine(new(0, -3), new(0, 8), J, out var a, out var b));
+        Assert.AreEqual(new Vector2(0, 0), a);
+        Assert.AreEqual(new Vector2(0, 5), b);
+    }
+
+    [Test]
+    public void JanelaViewport_CantosECentro()
+    {
+        var v = Rect.MinMaxRect(0, 0, 256, 96);
+        Assert.AreEqual(new Vector2(0, 0), Raster.JanelaViewport(new(0, 0), J, v));
+        Assert.AreEqual(new Vector2(256, 96), Raster.JanelaViewport(new(10, 5), J, v));
+        Assert.AreEqual(new Vector2(128, 48), Raster.JanelaViewport(new(5, 2.5f), J, v));
+    }
 }

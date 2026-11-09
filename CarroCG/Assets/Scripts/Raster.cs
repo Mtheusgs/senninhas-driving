@@ -97,4 +97,31 @@ public static class Raster
         }
         return saida;
     }
+
+    // Recorte de linha de Cohen–Sutherland. Código de região: 1 esquerda, 2 direita, 4 baixo, 8 cima.
+    public static int CodigoRegiao(Vector2 p, Rect r) =>
+        (p.x < r.xMin ? 1 : 0) | (p.x > r.xMax ? 2 : 0) | (p.y < r.yMin ? 4 : 0) | (p.y > r.yMax ? 8 : 0);
+
+    public static bool ClipLine(Vector2 a, Vector2 b, Rect r, out Vector2 a2, out Vector2 b2)
+    {
+        int ca = CodigoRegiao(a, r), cb = CodigoRegiao(b, r);
+        while (true)
+        {
+            if ((ca | cb) == 0) { a2 = a; b2 = b; return true; }            // aceitação trivial
+            if ((ca & cb) != 0) { a2 = b2 = default; return false; }        // rejeição trivial
+            int fora = ca != 0 ? ca : cb;                                   // corta o ponto que está fora
+            Vector2 p;
+            if ((fora & 8) != 0) p = new Vector2(a.x + (b.x - a.x) * (r.yMax - a.y) / (b.y - a.y), r.yMax);
+            else if ((fora & 4) != 0) p = new Vector2(a.x + (b.x - a.x) * (r.yMin - a.y) / (b.y - a.y), r.yMin);
+            else if ((fora & 2) != 0) p = new Vector2(r.xMax, a.y + (b.y - a.y) * (r.xMax - a.x) / (b.x - a.x));
+            else p = new Vector2(r.xMin, a.y + (b.y - a.y) * (r.xMin - a.x) / (b.x - a.x));
+            if (fora == ca) { a = p; ca = CodigoRegiao(a, r); }
+            else { b = p; cb = CodigoRegiao(b, r); }
+        }
+    }
+
+    // Transformação janela → viewport (mapeamento linear entre os dois retângulos).
+    public static Vector2 JanelaViewport(Vector2 p, Rect janela, Rect viewport) => new(
+        viewport.xMin + (p.x - janela.xMin) / janela.width * viewport.width,
+        viewport.yMin + (p.y - janela.yMin) / janela.height * viewport.height);
 }
