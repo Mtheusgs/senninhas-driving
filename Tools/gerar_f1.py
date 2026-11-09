@@ -214,6 +214,44 @@ def feixe():
                   fill=(255, 250, 220, int(14 + 4 * f)))
     return reduzir(img, w, h)
 
+# ---------- fundo (parallax): silhuetas claras, emendáveis na horizontal (período 1024) ----------
+LF, AF = 1024, 256
+
+def _silhueta(altura_em):
+    """Preenche, em cada coluna x, do topo altura_em(x) até o fim da imagem (com supersampling)."""
+    img = Image.new('RGBA', (LF * S, AF * S))
+    d = ImageDraw.Draw(img)
+    pts = [(x * S, (AF - altura_em(x)) * S) for x in range(0, LF + 1)]         # x em pixels reais
+    d.polygon(pts + [(LF * S, AF * S), (0, AF * S)], fill=(240, 244, 250, 255))
+    return reduzir(img, LF, AF)
+
+def montanhas():
+    def h(x):                                    # picos pontudos: soma de "dentes" triangulares periódicos
+        t = x / LF
+        dente = lambda f, a, fase: a * (1 - 2 * abs(((t * f + fase) % 1) - 0.5))
+        return 40 + dente(5, 120, 0.1) + dente(9, 50, 0.37) + dente(17, 16, 0.71)
+    return _silhueta(h)
+
+def morros():
+    def h(x):
+        t = 2 * math.pi * x / LF
+        return 95 + 38 * math.sin(2 * t + 0.4) + 22 * math.sin(5 * t + 1.7) + 9 * math.sin(9 * t + 0.2)
+    return _silhueta(h)
+
+def pinheiros():
+    rnd = random.Random(21)
+    img = Image.new('RGBA', (LF * S, AF * S))
+    d = ImageDraw.Draw(img)
+    base = 70
+    d.rectangle(s([(0, AF - base), (LF, AF)]), fill=(240, 244, 250, 255))
+    arvores = [(rnd.uniform(0, LF), rnd.uniform(60, 130), rnd.uniform(48, 80)) for _ in range(26)]
+    for x, alt, larg in arvores:
+        for dx in (-LF, 0, LF):                 # repete nas bordas: emenda sem degrau
+            cx = x + dx
+            topo = AF - base - alt
+            d.polygon(s([(cx, topo), (cx + larg / 2, AF - base + 4), (cx - larg / 2, AF - base + 4)]), fill=(240, 244, 250, 255))
+    return reduzir(img, LF, AF)
+
 if __name__ == '__main__':
     raiz = sys.argv[1]
     f1, ceu = os.path.join(raiz, 'F1'), os.path.join(raiz, 'Ceu')
@@ -224,6 +262,9 @@ if __name__ == '__main__':
               (f1, 'f1_corpo', corpo(atras, pintura, frente)), (f1, 'f1_roda', roda()), (f1, 'moeda', moeda()),
               (f1, 'galao', galao()), (ceu, 'estrelas', estrelas()), (ceu, 'terra', terra()),
               (ceu, 'sol', sol()), (ceu, 'lua', lua()), (ceu, 'ceu_gradiente', ceu_gradiente()), (f1, 'feixe', feixe())]
+    fundo = os.path.join(raiz, 'Fundo')
+    os.makedirs(fundo, exist_ok=True)
+    saidas += [(fundo, 'montanhas', montanhas()), (fundo, 'morros', morros()), (fundo, 'pinheiros', pinheiros())]
     saidas += [(f1, 'f1_normal', mapa_normal(saidas[3][2], 14, 8)), (f1, 'f1_roda_normal', mapa_normal(saidas[4][2], 10, 6))]
     for pasta, nome, img in saidas:
         caminho = os.path.join(pasta, nome + '.png')
