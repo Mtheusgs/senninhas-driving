@@ -11,6 +11,7 @@ public class Partida : MonoBehaviour
 
     public F1 f1;
     public Terreno terreno;
+    public Parallax parallax;
     public Combustivel combustivel = new();
     public float galaoQuantidade = 45f;
     public DetectorCapotagem capotagem = new();
@@ -59,6 +60,7 @@ public class Partida : MonoBehaviour
         if (EstadoAtual == Estado.Congelado) return;
         if (Input.GetKeyDown(KeyCode.R)) { Reiniciar(); return; }
         if (Input.GetKeyDown(KeyCode.L) && EstadoAtual == Estado.Jogando) ProximoSombreamento();
+        if (Input.GetKeyDown(KeyCode.P) && EstadoAtual == Estado.Jogando) AlternarProjecao();
         if (Input.GetKeyDown(KeyCode.Escape) && EstadoAtual != Estado.Fim) AlternarPausa();
         if (EstadoAtual != Estado.Jogando) return;
 
@@ -76,8 +78,20 @@ public class Partida : MonoBehaviour
     public void ProximoSombreamento()
     {
         terreno.ProximoSombreamento();
+        Avisar($"Sombreamento: {terreno.modoSombreamento}");
+    }
+
+    // Tecla P: projeção perspectiva ↔ paralela no fundo (parallax).
+    public void AlternarProjecao()
+    {
+        parallax.perspectiva = !parallax.perspectiva;
+        Avisar(parallax.perspectiva ? "Projeção: perspectiva" : "Projeção: paralela");
+    }
+
+    void Avisar(string texto)
+    {
         if (!textoAviso) return;
-        textoAviso.text = $"Sombreamento: {terreno.modoSombreamento}";
+        textoAviso.text = texto;
         textoAviso.transform.parent.gameObject.SetActive(true);
         avisoAte = Time.unscaledTime + 1.5f;
     }

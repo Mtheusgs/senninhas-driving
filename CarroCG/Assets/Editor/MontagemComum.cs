@@ -42,7 +42,7 @@ public static class MontagemComum
     public static void ConfigurarArte()
     {
         AssetDatabase.Refresh();
-        foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/F1", "Assets/Art/Ceu" }))
+        foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/F1", "Assets/Art/Ceu", "Assets/Art/Fundo" }))
         {
             var caminho = AssetDatabase.GUIDToAssetPath(guid);
             var imp = (TextureImporter)AssetImporter.GetAtPath(caminho);
@@ -63,12 +63,14 @@ public static class MontagemComum
             imp.mipmapEnabled = true;
             imp.alphaIsTransparency = true;
             imp.spritePixelsPerUnit = caminho.Contains("/f1_") ? Ppu
+                                    : caminho.Contains("/Fundo/") ? 32
                                     : caminho.EndsWith("estrelas.png") ? 20
                                     : caminho.EndsWith("terra.png") ? 128
                                     : caminho.EndsWith("sol.png") || caminho.EndsWith("lua.png") ? 40
                                     : caminho.EndsWith("ceu_gradiente.png") ? 16
                                     : caminho.EndsWith("feixe.png") ? 64 : 200;
-            if (caminho.Contains("/f1_"))                   // UV 0-1 iguais às do normal map
+            if (caminho.Contains("/Fundo/")) imp.wrapMode = TextureWrapMode.Repeat;   // camadas repetidas (tiled)
+            if (caminho.Contains("/f1_") || caminho.Contains("/Fundo/"))   // UV 0-1 (normal map) / malha retangular (tiled)
             {
                 var s = new TextureImporterSettings();
                 imp.ReadTextureSettings(s);
@@ -297,6 +299,57 @@ public static class MontagemComum
         ciclo.sol = Fundo(ceu, "Sol", "Assets/Art/Ceu/sol.png", new Vector3(0, 6, 15), -53);
         ciclo.lua = Fundo(ceu, "Lua", "Assets/Art/Ceu/lua.png", new Vector3(0, -6, 15), -53);
         return ciclo;
+    }
+
+    // Fundo em 3 camadas com profundidade (perto → longe): pinheiros z=5, morros z=20, montanhas z=60.
+    public static Parallax CriarParallax(Camera cam, CicloDia ciclo)
+    {
+        var p = new GameObject("Parallax").AddComponent<Parallax>();
+        p.cam = cam;
+        p.ciclo = ciclo;
+        p.camadas = new[]
+        {
+            Camada(p.transform, "pinheiros", 5, -1, new Color(0.35f, 0.55f, 0.35f), -20, false),
+            Camada(p.transform, "morros", 20, 0, new Color(0.45f, 0.62f, 0.45f), -30, true),
+            Camada(p.transform, "montanhas", 60, 2, new Color(0.55f, 0.6f, 0.72f), -40, true),
+        };
+        return p;
+    }
+
+    static Parallax.Camada Camada(Transform pai, string arte, float z, float yBase, Color cor, int ordem, bool naLua)
+    {
+        var baixo = new GameObject("Preenchimento " + arte).AddComponent<SpriteRenderer>();
+        baixo.transform.SetParent(pai, false);
+        baixo.sprite = CarregarSprite("Assets/Art/Gerado/quadrado.png");   // 1×1 unidade
+        baixo.sharedMaterial = MaterialUnlit;
+        baixo.sortingOrder = ordem;
+        var r = new GameObject("Camada " + arte).AddComponent<SpriteRenderer>();
+        r.transform.SetParent(pai, false);
+        r.sprite = CarregarSprite($"Assets/Art/Fundo/{arte}.png");
+        r.drawMode = SpriteDrawMode.Tiled;
+        r.sharedMaterial = MaterialUnlit;
+        r.sortingOrder = ordem;
+        return new Parallax.Camada { render = r, z = z, yBase = yBase, cor = cor, preenchimento = baixo, naLua = naLua };
+    }
+
+    // Minimapa no canto superior direito do HUD.
+    public static Minimapa CriarMinimapa(Transform hud, Terreno terreno, F1 f1)
+    {
+        var caixa = Caixa("Minimapa", hud, new Vector2(1, 1), new Vector2(-40, -40), new Vector2(256 * 1.6f + 8, 96 * 1.6f + 8),
+                          new Color(0, 0, 0, 0.55f));
+        var go = new GameObject("Imagem", typeof(RectTransform), typeof(RawImage));
+        var rt = (RectTransform)go.transform;
+        rt.SetParent(caixa, false);
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = new Vector2(4, 4);
+        rt.offsetMax = new Vector2(-4, -4);
+        go.GetComponent<RawImage>().raycastTarget = false;
+        var m = caixa.gameObject.AddComponent<Minimapa>();
+        m.terreno = terreno;
+        m.f1 = f1;
+        m.imagem = go.GetComponent<RawImage>();
+        return m;
     }
 
     public static SombraF1 CriarSombra(PecasF1 f1, Terreno terreno, CicloDia ciclo)

@@ -512,4 +512,96 @@ public class JogoTests
         yield return null;
         Assert.Less(Camera.main.WorldToViewportPoint(ciclo.sol.transform.position).y, 0.78f, "sol atrás da caixa de distância");
     }
+
+    [UnityTest]
+    public IEnumerator Parallax_CamadaLongeAndaMenosNaPerspectiva_IgualNaParalela()
+    {
+        yield return Carregar();
+        var p = Object.FindFirstObjectByType<Parallax>();
+        var cam = Camera.main;
+        float Tela(int i) => p.camadas[i].render.transform.position.x - cam.transform.position.x;
+        var segue = cam.GetComponent<CameraSegue>(); segue.enabled = false;
+        float perto0 = Tela(0), longe0 = Tela(2);
+        cam.transform.position += Vector3.right * 3;
+        yield return null;
+        float perto = Mathf.Abs(Mathf.Repeat(Tela(0) - perto0 + 50, 100) - 50), longe = Mathf.Abs(Mathf.Repeat(Tela(2) - longe0 + 50, 100) - 50);
+        Assert.Greater(perto, longe, "na perspectiva a camada longe deveria andar menos na tela");
+        Assert.Less(p.camadas[2].render.transform.localScale.x, p.camadas[0].render.transform.localScale.x);
+        partida.AlternarProjecao();
+        yield return null;
+        Assert.AreEqual(p.camadas[0].render.transform.localScale.x, p.camadas[2].render.transform.localScale.x, 1e-4, "paralela: mesma escala");
+        StringAssert.Contains("paralela", partida.textoAviso.text);
+    }
+
+    [UnityTest]
+    public IEnumerator Parallax_CobreATelaEmQualquerX()
+    {
+        yield return Carregar();
+        var p = Object.FindFirstObjectByType<Parallax>();
+        var cam = Camera.main;
+        cam.GetComponent<CameraSegue>().enabled = false;
+        foreach (float x in new[] { 0f, 137.3f, 999.9f, 5003.7f })
+        {
+            cam.transform.position = new Vector3(x, cam.transform.position.y, -10);
+            yield return null;
+            float meia = cam.orthographicSize * cam.aspect;
+            foreach (var c in p.camadas)
+            {
+                var b = c.render.bounds;
+                Assert.LessOrEqual(b.min.x, x - meia, $"buraco à esquerda em x={x} ({c.render.name})");
+                Assert.GreaterOrEqual(b.max.x, x + meia, $"buraco à direita em x={x} ({c.render.name})");
+            }
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator Minimapa_DesenhaTerrenoECarroNoCentro()
+    {
+        yield return Carregar();
+        yield return new WaitForSeconds(0.3f);
+        var m = Object.FindFirstObjectByType<Minimapa>();
+        var px = m.Textura.GetPixels32();
+        Assert.Greater(px.Count(c => c.r == 255 && c.g == 255 && c.b == 255), 50, "sem linha do terreno");
+        var centro = m.Textura.GetPixel(m.largura / 2, m.altura / 2);
+        Assert.Greater(centro.r, 0.9f); Assert.Less(centro.g, 0.1f);
+        Assert.AreEqual(f1.transform.position.x, m.Janela.center.x, 0.5f);
+    }
+
+    [UnityTest]
+    public IEnumerator ModoAula_MostraJanelaDoMinimapaEProjecao()
+    {
+        yield return Carregar();
+        var aula = Object.FindFirstObjectByType<ModoAula>();
+        aula.DefinirAtivo(true);
+        yield return null;
+        Assert.IsTrue(GameObject.Find("Aula: janela do minimapa").GetComponent<LineRenderer>().enabled);
+        StringAssert.Contains("Projeção: perspectiva", aula.rotulo.text);
+    }
+
+    [UnityTest]
+    public IEnumerator Parallax_SemCeuEntreCamadaEABaseDaTela()
+    {
+        yield return Carregar();
+        var p = Object.FindFirstObjectByType<Parallax>();
+        Object.FindFirstObjectByType<ModoAula>().DefinirAtivo(true);          // câmera bem afastada
+        yield return new WaitForSeconds(2);
+        float baseDaTela = Camera.main.transform.position.y - Camera.main.orthographicSize;
+        foreach (var c in p.camadas)
+        {
+            Assert.IsNotNull(c.preenchimento, $"{c.render.name} sem preenchimento embaixo");
+            Assert.LessOrEqual(c.preenchimento.bounds.min.y, baseDaTela, $"céu aparece embaixo de {c.render.name}");
+            Assert.GreaterOrEqual(c.preenchimento.bounds.max.y, c.render.bounds.min.y - 0.01f, $"fresta entre {c.render.name} e o preenchimento");
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator Lua_SemPinheirosNoFundo()
+    {
+        Sessao.Modo = Modo.Lua;
+        yield return Carregar();
+        yield return null;
+        var p = Object.FindFirstObjectByType<Parallax>();
+        Assert.IsFalse(p.camadas[0].render.enabled, "pinheiros na Lua");
+        Assert.IsTrue(p.camadas[2].render.enabled);
+    }
 }

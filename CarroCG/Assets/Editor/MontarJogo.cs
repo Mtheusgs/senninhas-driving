@@ -37,10 +37,12 @@ public static class MontarJogo
         var ciclo = MontagemComum.CriarCiclo(cam, terreno, luz, f1);
         config.ciclo = ciclo;
         MontagemComum.CriarSombra(f1, terreno, ciclo);
+        var parallax = MontagemComum.CriarParallax(cam, ciclo);
 
         var partida = new GameObject("Partida").AddComponent<Partida>();
         partida.f1 = f1.f1;
         partida.terreno = terreno;
+        partida.parallax = parallax;
         var canvas = MontagemComum.CriarCanvas(cam);
         MontarHud(partida, canvas.transform);
 
@@ -49,6 +51,8 @@ public static class MontarJogo
         aula.f1 = f1.f1;
         aula.partida = partida;
         aula.ciclo = ciclo;
+        aula.parallax = parallax;
+        aula.minimapa = MontagemComum.CriarMinimapa(canvas.transform, terreno, f1.f1);
         aula.materialLinha = MontagemComum.MaterialUnlit;
         var caixaAula = MontagemComum.Caixa("Rotulo Aula", canvas.transform, new Vector2(0, 0), new Vector2(40, 40),   // canto de baixo: não cobre moedas nem HUD
                                             new Vector2(720, 250), new Color(0, 0, 0, 0.55f));   // não cobre a caixa de distância

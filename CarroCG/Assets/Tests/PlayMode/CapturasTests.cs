@@ -122,4 +122,18 @@ public class CapturasTests
             Fotografo.Foto(nome);
         }
     }
+
+    [UnityTest, Explicit]
+    public IEnumerator Projecao()
+    {
+        yield return Carregar("Jogo");
+        var f1 = Object.FindFirstObjectByType<F1>();
+        f1.controlePeloTeclado = false;
+        f1.acelerador = 1;
+        yield return new WaitForSeconds(4);
+        Fotografo.Foto("projecao-perspectiva.png");
+        Object.FindFirstObjectByType<Partida>().AlternarProjecao();
+        yield return null;
+        Fotografo.Foto("projecao-paralela.png");
+    }
 }

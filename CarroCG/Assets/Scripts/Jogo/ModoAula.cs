@@ -11,6 +11,8 @@ public class ModoAula : MonoBehaviour
     public F1 f1;
     public Partida partida;
     public CicloDia ciclo;
+    public Minimapa minimapa;
+    public Parallax parallax;
     public Material materialLinha;
     public TMP_Text rotulo;
     public float duracaoScanline = 2f;
@@ -28,11 +30,13 @@ public class ModoAula : MonoBehaviour
         "· Recorte Sutherland-Hodgman: janela (amarelo), antes (vermelho), depois (verde)\n" +
         "· Translação e rotação: eixos x/y e velocidade do F1\n" +
         "· Iluminação: Lambert {0} (tecla L) - normais (magenta), luz do sol (amarelo)\n" +
+        "· Projeção: {1} (P) - minimapa: recorte Cohen-Sutherland, janela->viewport, Bresenham (laranja)\n" +
         "F: preenchimento scanline em câmera lenta</size>";
 
     GameObject eixos;
-    LineRenderer velocidade, scanline, raioSol;
-    ModoSombreamento modoNoRotulo = (ModoSombreamento)(-1);
+    LineRenderer velocidade, scanline, raioSol, janelaMinimapa;
+    string textoNoRotulo;
+    static readonly Color Laranja = new(1f, 0.55f, 0.1f);
     static readonly Color Magenta = new(1f, 0.3f, 0.9f);
     Rigidbody2D rb;
     CameraSegue segue;
@@ -52,6 +56,7 @@ public class ModoAula : MonoBehaviour
         scanline = Linha(transform, "Aula: scanline", true, 0.08f, Ciano, new Vector3[2]);
         scanline.enabled = false;
         raioSol = Linha(transform, "Aula: sol", true, 0.06f, Amarelo, new Vector3[2]);
+        janelaMinimapa = Linha(transform, "Aula: janela do minimapa", true, 0.12f, Laranja, new Vector3[5]);
         foreach (var c in terreno.chunks) Desenhar(c);
         DefinirAtivo(Preferencias.ModoAula);
     }
@@ -60,11 +65,8 @@ public class ModoAula : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Tab)) DefinirAtivo(!Ativo);
         if (Ativo && Input.GetKeyDown(KeyCode.F)) RepintarScanline();
-        if (terreno.modoSombreamento != modoNoRotulo)
-        {
-            modoNoRotulo = terreno.modoSombreamento;
-            rotulo.text = string.Format(Texto, modoNoRotulo);
-        }
+        var texto = string.Format(Texto, terreno.modoSombreamento, parallax && !parallax.perspectiva ? "paralela" : "perspectiva");
+        if (texto != textoNoRotulo) rotulo.text = textoNoRotulo = texto;
         if (Ativo)
         {
             if (ciclo)
@@ -72,6 +74,7 @@ public class ModoAula : MonoBehaviour
                 raioSol.SetPosition(0, rb.position);
                 raioSol.SetPosition(1, rb.position + ciclo.Atual.dirLuz * 2.5f);
             }
+            if (minimapa) janelaMinimapa.SetPositions(AulaGeometria.Retangulo(minimapa.Janela));
             velocidade.SetPosition(0, rb.position);
             velocidade.SetPosition(1, rb.position + rb.linearVelocity * 0.3f);
             var atual = terreno.chunks.Find(k => k.janela.xMin <= rb.position.x && rb.position.x < k.janela.xMax);
@@ -87,6 +90,7 @@ public class ModoAula : MonoBehaviour
         eixos.SetActive(sim);
         velocidade.enabled = sim;
         raioSol.enabled = sim;
+        janelaMinimapa.enabled = sim;
         rotulo.transform.parent.gameObject.SetActive(sim);
         if (!sim && segue) segue.enquadrar = null;
         foreach (var c in terreno.chunks)
