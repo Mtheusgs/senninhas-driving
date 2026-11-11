@@ -12,7 +12,12 @@ public class CameraSegue : MonoBehaviour
 
     public Rect? enquadrar;
     public float limiarImpacto = 6f;                 // variação brusca da velocidade vertical (m/s) = aterrissagem forte
-    public event System.Action<float> Impacto;      // modo aula: mostra a janela de recorte inteira do trecho atual
+    public event System.Action<float> Impacto;
+    public float Tremor { get; private set; }        // amplitude atual do tremor (some em ~0,3 s)
+    Vector3 basePos;
+    bool temBase;
+
+    public void Tremer(float forca) => Tremor = Mathf.Max(Tremor, Mathf.Min(0.35f, forca * 0.025f));      // modo aula: mostra a janela de recorte inteira do trecho atual
 
     Camera cam;
     Vector3 vel;
@@ -21,6 +26,7 @@ public class CameraSegue : MonoBehaviour
     float vyAnterior;
 
     void Awake() => cam = GetComponent<Camera>();
+    void OnEnable() => temBase = false;       // a intro move a câmera à mão: segue a partir de onde ela está
 
     void FixedUpdate()
     {
@@ -33,7 +39,10 @@ public class CameraSegue : MonoBehaviour
     void LateUpdate()
     {
         var (destino, zoom) = Alvo();
-        transform.position = Vector3.SmoothDamp(transform.position, destino, ref vel, suavidade);
+        if (!temBase) { basePos = transform.position; temBase = true; }
+        basePos = Vector3.SmoothDamp(basePos, destino, ref vel, suavidade);
+        transform.position = basePos + (Vector3)(Random.insideUnitCircle * Tremor);     // tremor por cima do seguir
+        Tremor = Mathf.MoveTowards(Tremor, 0, Time.deltaTime / 0.3f * 0.35f);
         cam.orthographicSize = Mathf.SmoothDamp(cam.orthographicSize, zoom, ref velZoom, suavidadeZoom);
     }
 
@@ -41,7 +50,8 @@ public class CameraSegue : MonoBehaviour
     public void Encaixar()
     {
         var (destino, zoom) = Alvo();
-        transform.position = destino;
+        transform.position = basePos = destino;
+        temBase = true;
         cam.orthographicSize = zoom;
         vel = Vector3.zero;
         velZoom = 0;

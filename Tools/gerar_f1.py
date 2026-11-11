@@ -252,6 +252,15 @@ def pinheiros():
             d.polygon(s([(cx, topo), (cx + larg / 2, AF - base + 4), (cx - larg / 2, AF - base + 4)]), fill=(240, 244, 250, 255))
     return reduzir(img, LF, AF)
 
+def particula():
+    n = 64
+    img = Image.new('RGBA', (n, n))
+    for y in range(n):
+        for x in range(n):
+            d = math.hypot(x - n / 2 + 0.5, y - n / 2 + 0.5) / (n / 2)
+            img.putpixel((x, y), (255, 255, 255, int(255 * max(0, 1 - d) ** 1.6)))
+    return img
+
 def poligono_circulo(cx, cy, r, n=12):
     return [(round(cx + r * math.cos(2 * math.pi * k / n), 1), round(cy + r * math.sin(2 * math.pi * k / n), 1)) for k in range(n)]
 
@@ -301,7 +310,7 @@ if __name__ == '__main__':
     saidas = [(f1, 'f1_atras', atras), (f1, 'f1_pintura', pintura), (f1, 'f1_frente', frente),
               (f1, 'f1_corpo', corpo(atras, pintura, frente)), (f1, 'f1_roda', roda()), (f1, 'moeda', moeda()),
               (f1, 'galao', galao()), (ceu, 'estrelas', estrelas()), (ceu, 'terra', terra()),
-              (ceu, 'sol', sol()), (ceu, 'lua', lua()), (ceu, 'ceu_gradiente', ceu_gradiente()), (f1, 'feixe', feixe())]
+              (ceu, 'sol', sol()), (ceu, 'lua', lua()), (ceu, 'ceu_gradiente', ceu_gradiente()), (f1, 'feixe', feixe()), (f1, 'particula', particula())]
     fundo = os.path.join(raiz, 'Fundo')
     os.makedirs(fundo, exist_ok=True)
     saidas += [(fundo, 'montanhas', montanhas()), (fundo, 'morros', morros()), (fundo, 'pinheiros', pinheiros())]

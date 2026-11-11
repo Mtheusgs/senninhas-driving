@@ -34,6 +34,7 @@ public static class MontarMenu
         config.ciclo = ciclo;
         MontagemComum.CriarSombra(f1, terreno, ciclo);
         MontagemComum.CriarReflexo(f1, terreno);
+        MontagemComum.CriarEfeitos(f1, cam, ciclo, terreno);
         MontagemComum.CriarParallax(cam, ciclo);
         config.limiteAmplitude = 4f;          // demo tranquilo: quase nunca trava nem capota
         var piloto = f1.chassi.AddComponent<PilotoAutomatico>();

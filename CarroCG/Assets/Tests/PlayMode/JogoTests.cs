@@ -3,6 +3,8 @@ using System.Linq;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
@@ -671,5 +673,63 @@ public class JogoTests
         terreno.TrechoCriado += c => viu |= c.agua != null;
         for (float x = 0; x < 600; x += 20) terreno.Atualizar(x);
         Assert.IsFalse(viu);
+    }
+
+    // ---------- Efeitos (etapa 6) ----------
+
+    [UnityTest]
+    public IEnumerator Poeira_EmiteAcelerandoNoChao()
+    {
+        yield return Carregar();
+        var efeitos = Object.FindFirstObjectByType<Efeitos>();
+        yield return new WaitForSeconds(0.5f);
+        Assert.AreEqual(0, efeitos.Poeira.particleCount, "poeira parado");
+        f1.acelerador = 1;
+        yield return new WaitForSeconds(1);
+        Assert.Greater(efeitos.Poeira.particleCount, 0);
+    }
+
+    [UnityTest]
+    public IEnumerator Aterrissagem_Forte_TremeEFaisca()
+    {
+        yield return Carregar();
+        var efeitos = Object.FindFirstObjectByType<Efeitos>();
+        var segue = Object.FindFirstObjectByType<CameraSegue>();
+        yield return new WaitForSeconds(0.5f);
+        float forca = 0;
+        segue.Impacto += f => forca = f;
+        foreach (var rb in f1.transform.parent.GetComponentsInChildren<Rigidbody2D>())
+        {
+            rb.position += Vector2.up * 6;
+            rb.transform.position += Vector3.up * 6;
+        }
+        float t0 = Time.time;
+        while (forca == 0 && Time.time - t0 < 3) yield return null;
+        Assert.Greater(forca, 0, "sem impacto ao cair de 6 m");
+        Assert.Greater(segue.Tremor, 0);
+        Assert.Greater(efeitos.Faiscas.particleCount, 0);
+    }
+
+    [UnityTest]
+    public IEnumerator Moeda_Brilho()
+    {
+        yield return Carregar();
+        var efeitos = Object.FindFirstObjectByType<Efeitos>();
+        Coletavel.NotificarParaTeste(TipoColetavel.Moeda, f1.transform.position);
+        yield return null;
+        Assert.Greater(efeitos.Brilho.particleCount, 0);
+    }
+
+    [UnityTest]
+    public IEnumerator PosProcessamento_TemBloomVinheta()
+    {
+        yield return Carregar();
+        var volume = Object.FindFirstObjectByType<Volume>();
+        Assert.IsNotNull(volume);
+        Assert.IsTrue(volume.isGlobal);
+        Assert.IsTrue(volume.profile.TryGet<Bloom>(out var b) && b.active);
+        Assert.IsTrue(volume.profile.TryGet<Vignette>(out var v) && v.active);
+        Assert.IsTrue(volume.profile.TryGet<ColorAdjustments>(out _));
+        Assert.IsTrue(Camera.main.GetUniversalAdditionalCameraData().renderPostProcessing);
     }
 }

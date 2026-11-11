@@ -386,6 +386,61 @@ public static class MontagemComum
         return r;
     }
 
+    // Partículas e pós-processamento (componente Efeitos). Material: sprite unlit com um ponto suave.
+    public static Efeitos CriarEfeitos(PecasF1 f1, Camera cam, CicloDia ciclo, Terreno terreno)
+    {
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/F1/particula.png");
+        var mat = Material("Particula", "Universal Render Pipeline/2D/Sprite-Unlit-Default", m => m.mainTexture = tex);
+        var e = new GameObject("Efeitos").AddComponent<Efeitos>();
+        e.f1 = f1.f1;
+        e.cam = cam.GetComponent<CameraSegue>();
+        e.ciclo = ciclo;
+        e.terreno = terreno;
+        e.poeira = Particulas("Poeira", e.transform, mat, 0.6f, 0.4f, 1.6f, new Color(0.62f, 0.48f, 0.32f, 0.7f), -0.2f, 6, 0.5f);
+        e.faiscas = Particulas("Faiscas", e.transform, mat, 0.45f, 0.12f, 6f, new Color(1f, 0.8f, 0.3f), 1.2f, 7, 0.05f);
+        e.brilho = Particulas("Brilho", e.transform, mat, 0.5f, 0.25f, 2.5f, new Color(1f, 0.92f, 0.4f), 0f, 7, 0.1f);
+        e.respingo = Particulas("Respingo", e.transform, mat, 0.7f, 0.18f, 3f, new Color(0.75f, 0.9f, 1f, 0.8f), 1.5f, 1, 0.3f);
+        var forma = e.respingo.shape;
+        forma.angle = 20;
+        forma.rotation = new Vector3(-90, 0, 0);    // jorra para cima
+        return e;
+    }
+
+    static ParticleSystem Particulas(string nome, Transform pai, Material mat, float vida, float tamanho, float velocidade,
+                                     Color cor, float gravidade, int ordem, float raio)
+    {
+        var go = new GameObject(nome);
+        go.transform.SetParent(pai, false);
+        var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = ps.main;
+        main.duration = 1;
+        main.loop = true;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(vida * 0.6f, vida);
+        main.startSize = new ParticleSystem.MinMaxCurve(tamanho * 0.6f, tamanho);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(velocidade * 0.4f, velocidade);
+        main.startColor = cor;
+        main.gravityModifier = gravidade;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.maxParticles = 200;
+        main.playOnAwake = true;
+        var em = ps.emission;
+        em.rateOverTime = 0;
+        var forma = ps.shape;
+        forma.shapeType = ParticleSystemShapeType.Circle;
+        forma.radius = raio;
+        var col = ps.colorOverLifetime;
+        col.enabled = true;
+        var g = new Gradient();
+        g.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) },
+                  new[] { new GradientAlphaKey(1, 0), new GradientAlphaKey(0, 1) });
+        col.color = g;
+        var r = go.GetComponent<ParticleSystemRenderer>();
+        r.sharedMaterial = mat;
+        r.sortingOrder = ordem;
+        return ps;
+    }
+
     // ---------- UI (Screen Space - Camera, para aparecer nas capturas) ----------
 
     public static Canvas CriarCanvas(Camera cam)
