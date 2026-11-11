@@ -266,4 +266,16 @@ public class MenuTests
         yield return Carregar("Menu");
         Assert.Less(Object.FindFirstObjectByType<Terreno>().amplitudeMax, ModoJogo.Parametros(Modo.Terra).amplitudeMax);
     }
+
+    [UnityTest]
+    public IEnumerator Configuracoes_VolumeCicla()
+    {
+        yield return Carregar("Menu");
+        Assert.AreEqual(7, Preferencias.Volume);
+        StringAssert.Contains("7", menu.textoVolume.text);
+        for (int i = 0; i < 4; i++) menu.ProximoVolume();
+        Assert.AreEqual(0, Preferencias.Volume);          // 8, 9, 10, 0
+        Assert.AreEqual(0f, AudioListener.volume);
+        StringAssert.Contains("0", menu.textoVolume.text);
+    }
 }

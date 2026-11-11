@@ -30,6 +30,13 @@ public class Coletavel : MonoBehaviour
 {
     public TipoColetavel tipo;
     public static event System.Action<TipoColetavel> Coletado;
+    public static event System.Action<TipoColetavel, Vector2> ColetadoEm;     // efeitos: onde foi pego
+
+    public static void NotificarParaTeste(TipoColetavel t, Vector2 onde = default)
+    {
+        Coletado?.Invoke(t);
+        ColetadoEm?.Invoke(t, onde);
+    }
     bool pego;
 
     void Update()
@@ -45,6 +52,7 @@ public class Coletavel : MonoBehaviour
         if (pego || !outro.CompareTag("Player")) return;   // roda e chassi podem tocar no mesmo passo
         pego = true;
         Coletado?.Invoke(tipo);
+        ColetadoEm?.Invoke(tipo, transform.position);
         Destroy(gameObject);
     }
 }

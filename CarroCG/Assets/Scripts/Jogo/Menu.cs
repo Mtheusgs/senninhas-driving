@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public class Menu : MonoBehaviour
 {
     public GameObject principal, escolhaModo, garagem, controles, configuracoes, tecnicas, recorde;
-    public TMP_Text textoTecnicas, textoRecorde, textoZerar, textoTelaCheia, textoModoAula, textoQualidade, textoCor;
+    public TMP_Text textoTecnicas, textoRecorde, textoZerar, textoTelaCheia, textoModoAula, textoQualidade, textoCor, textoVolume;
     public Image previaPintura;
     public RectTransform previaCarro;
 
@@ -21,6 +21,7 @@ public class Menu : MonoBehaviour
     {
         Time.timeScale = 1;
         Screen.fullScreen = Preferencias.TelaCheia;
+        AudioListener.volume = Preferencias.Volume / 10f;
         textoTecnicas.text = TecnicasCG.Texto();
         Abrir(principal);
     }
@@ -91,6 +92,13 @@ public class Menu : MonoBehaviour
         AtualizarTextos();
     }
 
+    public void ProximoVolume()
+    {
+        Preferencias.Volume = (Preferencias.Volume + 1) % 11;
+        AudioListener.volume = Preferencias.Volume / 10f;
+        AtualizarTextos();
+    }
+
     // Duas etapas: o 1º clique pede confirmação, o 2º zera.
     public void ZerarRecordes()
     {
@@ -113,6 +121,7 @@ public class Menu : MonoBehaviour
         textoTelaCheia.text = $"Tela cheia: {(Preferencias.TelaCheia ? "sim" : "não")}";
         textoModoAula.text = $"Modo aula ao iniciar: {(Preferencias.ModoAula ? "sim" : "não")}";
         textoQualidade.text = $"Qualidade: {Preferencias.NomesQualidade[Preferencias.Qualidade]}";
+        if (textoVolume) textoVolume.text = $"Volume: {Preferencias.Volume}";
         textoCor.text = Garagem.Nomes[Garagem.IndiceEscolhido];
         previaPintura.color = Garagem.CorEscolhida;
         textoRecorde.text = $"<b>Terra</b>\n{Preferencias.Recorde(Modo.Terra):0} m  ·  {Preferencias.MoedasDoRecorde(Modo.Terra)} moedas\n\n" +

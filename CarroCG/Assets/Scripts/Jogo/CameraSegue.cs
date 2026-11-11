@@ -10,13 +10,25 @@ public class CameraSegue : MonoBehaviour
     public float olharAFrente = 0.3f, olharMax = 4f;
     public float zoomMin = 7f, zoomMax = 11f, velocidadeZoomMax = 18f, suavidadeZoom = 0.8f;
 
-    public Rect? enquadrar;      // modo aula: mostra a janela de recorte inteira do trecho atual
+    public Rect? enquadrar;
+    public float limiarImpacto = 6f;                 // variação brusca da velocidade vertical (m/s) = aterrissagem forte
+    public event System.Action<float> Impacto;      // modo aula: mostra a janela de recorte inteira do trecho atual
 
     Camera cam;
     Vector3 vel;
     float velZoom;
 
+    float vyAnterior;
+
     void Awake() => cam = GetComponent<Camera>();
+
+    void FixedUpdate()
+    {
+        if (!alvo) return;
+        float vy = alvo.linearVelocity.y;
+        if (vy - vyAnterior > limiarImpacto && vyAnterior < -limiarImpacto * 0.5f) Impacto?.Invoke(vy - vyAnterior);
+        vyAnterior = vy;
+    }
 
     void LateUpdate()
     {

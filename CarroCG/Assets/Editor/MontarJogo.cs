@@ -63,6 +63,10 @@ public static class MontarJogo
         aula.rotulo.fontSizeMin = 16;
         aula.rotulo.fontSizeMax = 30;
         CriarIntro(partida, canvas, f1, cam);
+        var som = new GameObject("Som").AddComponent<Som>();
+        som.f1 = f1.f1;
+        som.partida = partida;
+        som.cam = cam.GetComponent<CameraSegue>();
         MontagemComum.CriarEventSystem();
 
         Directory.CreateDirectory("Assets/Scenes");

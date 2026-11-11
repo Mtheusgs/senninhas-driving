@@ -19,7 +19,7 @@ public static class Preferencias
 
     static readonly string[] Chaves =
     {
-        "cor", "qualidade", "telaCheia", "modoAula",
+        "cor", "qualidade", "volume", "telaCheia", "modoAula",
         "recorde.Terra", "recorde.Lua", "moedasRecorde.Terra", "moedasRecorde.Lua",
     };
 
@@ -41,6 +41,12 @@ public static class Preferencias
     {
         get => Mathf.Clamp(PlayerPrefs.GetInt(K("qualidade"), 0), 0, PpuTerreno.Length - 1);
         set => SalvarInt("qualidade", value);
+    }
+
+    public static int Volume       // 0..10
+    {
+        get => Mathf.Clamp(PlayerPrefs.GetInt(K("volume"), 7), 0, 10);
+        set => SalvarInt("volume", value);
     }
 
     public static bool TelaCheia

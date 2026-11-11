@@ -163,7 +163,7 @@ public static class MontarMenu
         Titulo(tela, "Controles");
         var caixa = MontagemComum.Caixa("Caixa", tela, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000, 560), new Color(0, 0, 0, 0.5f));
         MontagemComum.Texto("Texto", caixa, new Vector2(0.06f, 0.05f), new Vector2(0.94f, 0.95f), 38, TextAlignmentOptions.Left).text =
-            "Seta direita   acelera\nSeta esquerda   freia / ré\nNo ar: as setas giram o carro\nR   reinicia\nEsc   pausa\nTab   modo aula\nF   scanline em câmera lenta (modo aula)";
+            "Seta direita   acelera\nSeta esquerda   freia / ré\nNo ar: as setas giram o carro\nR   reinicia      Esc   pausa\nTab   modo aula      F   scanline em câmera lenta\nL   sombreamento (Flat, Gouraud, Phong)\nP   projeção (perspectiva, paralela)\nEspaço   pula a intro";
         Voltar(tela, menu);
         return tela.gameObject;
     }
@@ -174,6 +174,7 @@ public static class MontarMenu
         Titulo(tela, "Configurações");
         var col = MontagemComum.Coluna(tela, new Vector2(0.5f, 0.5f), 640);
         menu.textoQualidade = MontagemComum.Botao(col, "Qualidade", menu.ProximaQualidade).Item2;
+        menu.textoVolume = MontagemComum.Botao(col, "Volume", menu.ProximoVolume).Item2;
         menu.textoTelaCheia = MontagemComum.Botao(col, "Tela cheia", menu.AlternarTelaCheia).Item2;
         menu.textoModoAula = MontagemComum.Botao(col, "Modo aula ao iniciar", menu.AlternarModoAula).Item2;
         MontagemComum.Botao(col, "Voltar", menu.AbrirPrincipal);

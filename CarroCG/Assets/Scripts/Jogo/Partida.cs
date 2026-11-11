@@ -23,6 +23,7 @@ public class Partida : MonoBehaviour
     public TMP_Text textoAviso;               // aviso curto (ex.: modo de sombreamento)
 
     public Estado EstadoAtual { get; private set; }
+    public event System.Action Terminou;
     public int Moedas { get; private set; }
     public float Distancia { get; private set; }
 
@@ -145,6 +146,7 @@ public class Partida : MonoBehaviour
                         (novo ? "Novo recorde!" : $"Recorde: {recorde:0} m") + "</size>";
         painelFim.SetActive(true);
         Selecionar(painelFim);
+        Terminou?.Invoke();
         AtualizarHud();
     }
 
