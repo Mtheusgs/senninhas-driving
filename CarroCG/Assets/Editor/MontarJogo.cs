@@ -37,6 +37,7 @@ public static class MontarJogo
         var ciclo = MontagemComum.CriarCiclo(cam, terreno, luz, f1);
         config.ciclo = ciclo;
         MontagemComum.CriarSombra(f1, terreno, ciclo);
+        MontagemComum.CriarReflexo(f1, terreno);
         var parallax = MontagemComum.CriarParallax(cam, ciclo);
 
         var partida = new GameObject("Partida").AddComponent<Partida>();

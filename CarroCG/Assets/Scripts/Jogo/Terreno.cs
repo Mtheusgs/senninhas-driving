@@ -17,6 +17,7 @@ public class Terreno : MonoBehaviour
         public Texture2D luz;             // cor da luz por coluna de pixel (w×1)
         public GameObject go;
         public Texture2D tex;
+        public Rect? agua;                // trecho de lago: retângulo da água (yMax = linha da água)
     }
 
     public Transform alvo;
@@ -32,6 +33,15 @@ public class Terreno : MonoBehaviour
     public Material materialLuz;                       // CarroCG/TerrenoLuz: cor × luz por coluna
     public int amostrasLuz = 12;
     public ModoSombreamento modoSombreamento = ModoSombreamento.Phong;
+    public bool lagos;                                 // Terra: ponte sobre lago a cada 8–12 trechos
+    public Sprite quadrado;                            // 1×1 unidade: água e pilares da ponte
+    public Color corAgua = new(0.22f, 0.48f, 0.75f, 0.9f), corPilar = new(0.3f, 0.22f, 0.16f);
+    public float espessuraPonte = 0.4f, alturaPonte = 1f;   // linha da água fica alturaPonte abaixo da pista
+    public static readonly TerrenoChunk.Paleta Ponte = new()
+    {
+        gramaBorda = new Color(0.78f, 0.78f, 0.8f), grama = new Color(0.52f, 0.36f, 0.22f),
+        terraClara = new Color(0.42f, 0.29f, 0.18f), terraEscura = new Color(0.3f, 0.2f, 0.12f),
+    };
 
     Vector2 dirLuz = Vector2.up;
     Color corSol = Color.white, corAmbiente = new(0.42f, 0.44f, 0.5f);
@@ -56,7 +66,7 @@ public class Terreno : MonoBehaviour
         foreach (var c in chunks) Liberar(c);
         chunks.Clear();
         Gerador = new TerrenoGerador(semente)
-            { amplitudeInicial = amplitudeInicial, ganhoPorTrecho = ganhoPorTrecho, amplitudeMax = amplitudeMax };
+            { amplitudeInicial = amplitudeInicial, ganhoPorTrecho = ganhoPorTrecho, amplitudeMax = amplitudeMax, lagos = lagos };
         if (!parede)
         {
             parede = GetComponent<EdgeCollider2D>();
@@ -121,9 +131,10 @@ public class Terreno : MonoBehaviour
         float baseJanela = curva.Min(p => p.y) - profundidade;
         var janela = Rect.MinMaxRect(t.p0.x, baseJanela, t.p3.x, topo);
 
-        var original = TerrenoChunk.Poligono(curva, baseJanela - fundoExtra);
+        // lago: o trecho vira só o tabuleiro da ponte; embaixo, a água
+        var original = TerrenoChunk.Poligono(curva, t.lago ? t.p0.y - espessuraPonte : baseJanela - fundoExtra);
         var poligono = Raster.ClipPolygon(original, janela);                                       // recorte
-        var px = TerrenoChunk.Pintar(poligono, janela, ppu, curva, paleta, out int w, out int h);   // preenchimento
+        var px = TerrenoChunk.Pintar(poligono, janela, ppu, curva, t.lago ? Ponte : paleta, out int w, out int h);   // preenchimento
 
         var tex = new Texture2D(w, h, TextureFormat.RGBA32, false)
             { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, name = $"Trecho {indice}" };
@@ -147,10 +158,35 @@ public class Terreno : MonoBehaviour
             poligonoOriginal = original, poligonoRecortado = poligono,
             facetas = TerrenoGerador.Amostrar(t, amostrasLuz + 1), luz = luz,
         };
+        if (t.lago) CriarAgua(c);
         AplicarLuz(c);
         chunks.Add(c);
         TrechoCriado?.Invoke(c);
         return c;
+    }
+
+    void CriarAgua(Chunk c)
+    {
+        var t = c.trecho;
+        var agua = Rect.MinMaxRect(t.p0.x, c.janela.yMin, t.p3.x, t.p0.y - alturaPonte);
+        c.agua = agua;
+        Quadrado(c.go.transform, "Agua", agua, corAgua, -2);
+        for (int k = 1; k <= 2; k++)          // pilares da ponte
+        {
+            float x = t.p0.x + k * (t.p3.x - t.p0.x) / 3;
+            Quadrado(c.go.transform, "Pilar", Rect.MinMaxRect(x - 0.25f, agua.yMin, x + 0.25f, t.p0.y - espessuraPonte), corPilar, -1);
+        }
+    }
+
+    void Quadrado(Transform pai, string nome, Rect r, Color cor, int ordem)
+    {
+        var sr = new GameObject(nome).AddComponent<SpriteRenderer>();
+        sr.transform.SetParent(pai, false);
+        sr.transform.position = r.center;
+        sr.transform.localScale = new Vector3(r.width, r.height, 1) / (quadrado ? quadrado.bounds.size.x : 1);
+        sr.sprite = quadrado;
+        sr.color = cor;
+        sr.sortingOrder = ordem;
     }
 
     // Modo aula: apaga o trecho e o repinta de baixo para cima, uma linha do scanline por vez, em tempo real

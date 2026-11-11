@@ -24,6 +24,7 @@ public class ConfigurarPartida : MonoBehaviour
         terreno.ganhoPorTrecho = p.ganhoPorTrecho;
         terreno.amplitudeMax = limiteAmplitude > 0 ? Mathf.Min(p.amplitudeMax, limiteAmplitude) : p.amplitudeMax;
         terreno.paleta = p.paleta;
+        terreno.lagos = p.lagos;
         terreno.ppu = Preferencias.PpuTerreno[Preferencias.Qualidade];
         f1.torqueNoAr = p.torqueNoAr;
         cam.backgroundColor = p.ceu;

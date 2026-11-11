@@ -9,6 +9,7 @@ public struct ParametrosModo
     public Color ceu;
     public TerrenoChunk.Paleta paleta;
     public bool ceuLunar;
+    public bool lagos;                      // só na Terra: na Lua não há água
 }
 
 // Terra e Lua: mesma geração (Bézier, recorte, scanline), parâmetros diferentes.
@@ -41,6 +42,7 @@ public static class ModoJogo
             torqueNoAr = 16f,
             ceu = new Color(0.55f, 0.78f, 0.95f),
             ceuLunar = false,
+            lagos = true,
             paleta = new TerrenoChunk.Paleta(),
         };
 }

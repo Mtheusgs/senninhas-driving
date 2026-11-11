@@ -604,4 +604,70 @@ public class JogoTests
         Assert.IsFalse(p.camadas[0].render.enabled, "pinheiros na Lua");
         Assert.IsTrue(p.camadas[2].render.enabled);
     }
+
+    // ---------- Lago (etapa 4) ----------
+
+    static Terreno.Chunk AcharLago(Terreno t)
+    {
+        for (float x = 0; x < 2000; x += 20)
+        {
+            t.Atualizar(x);
+            var c = t.chunks.Find(k => k.agua != null);
+            if (c != null) return c;
+        }
+        return null;
+    }
+
+    [UnityTest]
+    public IEnumerator Lago_TemAguaEPonteHorizontal()
+    {
+        yield return Carregar();
+        var terreno = Object.FindFirstObjectByType<Terreno>();
+        var lago = AcharLago(terreno);
+        Assert.IsNotNull(lago, "nenhum lago em 100 trechos");
+        var pontos = lago.go.GetComponent<EdgeCollider2D>().points;
+        foreach (var p in pontos) Assert.AreEqual(pontos[0].y, p.y, 1e-3f, "ponte não é plana");
+        Assert.Less(lago.agua.Value.yMax, lago.trecho.p0.y, "água acima da ponte");
+        Assert.IsNotNull(lago.go.transform.Find("Agua"));
+    }
+
+    [UnityTest]
+    public IEnumerator Reflexo_ApareceSoSobreOLago()
+    {
+        yield return Carregar();
+        var reflexo = Object.FindFirstObjectByType<Reflexo>();
+        yield return null;
+        Assert.IsTrue(reflexo.Malhas.All(m => m.vertexCount == 0), "reflexo na largada, sem lago");
+
+        var lago = AcharLago(Object.FindFirstObjectByType<Terreno>());
+        var destino = new Vector2(lago.agua.Value.center.x, lago.trecho.p0.y + 0.6f);
+        var delta = destino - (Vector2)f1.transform.position;
+        foreach (var rb in f1.transform.parent.GetComponentsInChildren<Rigidbody2D>())
+        {
+            rb.position += delta;
+            rb.linearVelocity = Vector2.zero;
+            rb.transform.position += (Vector3)delta;
+        }
+        yield return null;
+        yield return null;
+        var pintura = reflexo.Malhas[1];
+        Assert.Greater(pintura.vertexCount, 2, "sem reflexo sobre o lago");
+        foreach (var v in pintura.vertices)
+        {
+            var w = reflexo.transform.TransformPoint(v);
+            Assert.LessOrEqual(w.y, lago.agua.Value.yMax + 1e-3f, "reflexo acima da linha da água");
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator Lua_SemLago()
+    {
+        Sessao.Modo = Modo.Lua;
+        yield return Carregar();
+        var terreno = Object.FindFirstObjectByType<Terreno>();
+        bool viu = false;
+        terreno.TrechoCriado += c => viu |= c.agua != null;
+        for (float x = 0; x < 600; x += 20) terreno.Atualizar(x);
+        Assert.IsFalse(viu);
+    }
 }

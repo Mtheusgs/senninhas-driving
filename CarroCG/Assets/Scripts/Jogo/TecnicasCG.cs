@@ -26,12 +26,12 @@ public static class TecnicasCG
         T("Preenchimento", Sim("scanline do terreno (tecla F no modo aula)"), Breve("regiões do F1 na intro"), Sim("sombra do F1")),
         T("Curva de Bézier", Sim("terreno infinito de Bézier cúbicas")),
         T("Recorte", Sim("Sutherland-Hodgman: terreno contra a janela do trecho"),
-                     Breve("Sutherland-Hodgman: reflexo no lago"), Sim("Cohen-Sutherland: minimapa")),
+                     Sim("Sutherland-Hodgman: reflexo no lago"), Sim("Cohen-Sutherland: minimapa")),
         T("Iluminação e sombreamento", Sim("Lambert Flat/Gouraud/Phong no terreno (tecla L)"), Sim("shader Phong do F1"),
                                        Sim("sombra projetada do F1")),
         T("Translação", Sim("movimento do carro"), Sim("moedas e galões sobre a curva"), Sim("parallax")),
         T("Rotação", Sim("carro inclinando e rodas girando"), Sim("giro no ar"), Breve("wireframe 3D da intro")),
-        T("Espelhamento", Sim("emenda C1 do terreno (P1 = 2·P3 - P2)"), Breve("reflexo no lago")),
+        T("Espelhamento", Sim("emenda C1 do terreno (P1 = 2·P3 - P2)"), Sim("reflexo no lago (y' = 2h - y)")),
     };
 
     public static string Texto() => string.Join("\n", Lista.Select(t =>

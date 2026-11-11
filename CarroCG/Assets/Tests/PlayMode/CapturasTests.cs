@@ -136,4 +136,31 @@ public class CapturasTests
         yield return null;
         Fotografo.Foto("projecao-paralela.png");
     }
+
+    [UnityTest, Explicit]
+    public IEnumerator Lago()
+    {
+        yield return Carregar("Jogo");
+        var f1 = Object.FindFirstObjectByType<F1>();
+        f1.controlePeloTeclado = false;
+        var terreno = Object.FindFirstObjectByType<Terreno>();
+        Terreno.Chunk lago = null;
+        for (float x = 0; lago == null && x < 2000; x += 20)
+        {
+            terreno.Atualizar(x);
+            lago = terreno.chunks.Find(k => k.agua != null);
+        }
+        var delta = new Vector2(lago.agua.Value.center.x - 2, lago.trecho.p0.y + 0.7f) - (Vector2)f1.transform.position;
+        foreach (var rb in f1.transform.parent.GetComponentsInChildren<Rigidbody2D>())
+        {
+            rb.position += delta;
+            rb.transform.position += (Vector3)delta;
+        }
+        Object.FindFirstObjectByType<CameraSegue>().Encaixar();
+        yield return new WaitForSeconds(1f);
+        Fotografo.Foto("jogo-lago.png");
+        Object.FindFirstObjectByType<ModoAula>().DefinirAtivo(true);
+        yield return new WaitForSeconds(0.5f);
+        Fotografo.Foto("jogo-lago-aula.png");
+    }
 }

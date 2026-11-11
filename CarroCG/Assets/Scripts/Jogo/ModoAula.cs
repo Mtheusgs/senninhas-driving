@@ -31,6 +31,7 @@ public class ModoAula : MonoBehaviour
         "· Translação e rotação: eixos x/y e velocidade do F1\n" +
         "· Iluminação: Lambert {0} (tecla L) - normais (magenta), luz do sol (amarelo)\n" +
         "· Projeção: {1} (P) - minimapa: recorte Cohen-Sutherland, janela->viewport, Bresenham (laranja)\n" +
+        "· Espelhamento: reflexo no lago (y' = 2h - y), recortado contra a água (azul)\n" +
         "F: preenchimento scanline em câmera lenta</size>";
 
     GameObject eixos;
@@ -38,6 +39,7 @@ public class ModoAula : MonoBehaviour
     string textoNoRotulo;
     static readonly Color Laranja = new(1f, 0.55f, 0.1f);
     static readonly Color Magenta = new(1f, 0.3f, 0.9f);
+    static readonly Color AzulClaro = new(0.55f, 0.8f, 1f);
     Rigidbody2D rb;
     CameraSegue segue;
 
@@ -139,6 +141,12 @@ public class ModoAula : MonoBehaviour
         for (int k = 0; k < nv.Length; k++)
             Linha(normais, "normal", true, 0.04f, Magenta, new Vector3[] { c.facetas[k], c.facetas[k] + nv[k] * 0.8f });
         int i = terreno.chunks.IndexOf(c);
+        if (c.agua is Rect agua)
+        {
+            Linha(raiz, "janela da agua", true, 0.06f, AzulClaro, AulaGeometria.Retangulo(agua));
+            Linha(raiz, "linha da agua", true, 0.08f, Ciano,
+                  new Vector3[] { new(agua.xMin - 2, agua.yMax), new(agua.xMax + 2, agua.yMax) });
+        }
         if (i > 0) Linha(raiz, "emenda", true, 0.08f, Ciano, AulaGeometria.Emenda(terreno.chunks[i - 1].trecho, c.trecho));
         raiz.gameObject.SetActive(Ativo);
     }

@@ -371,7 +371,19 @@ public static class MontagemComum
         terreno.alvo = alvo;
         terreno.materialChao = chao;
         terreno.materialLuz = Material("TerrenoLuz", "CarroCG/TerrenoLuz");
+        terreno.quadrado = CarregarSprite("Assets/Art/Gerado/quadrado.png");
         return terreno;
+    }
+
+    // Reflexo do F1 nos lagos (todas as peças desenhadas: camadas do chassi e rodas).
+    public static Reflexo CriarReflexo(PecasF1 f1, Terreno terreno)
+    {
+        var r = new GameObject("Reflexo F1").AddComponent<Reflexo>();
+        r.terreno = terreno;
+        r.pecas = f1.chassi.GetComponent<PhongF1>().pecas;
+        r.material = AssetDatabase.LoadAssetAtPath<Material>(
+            "Packages/com.unity.render-pipelines.universal/Runtime/Materials/Sprite-Lit-Default.mat");
+        return r;
     }
 
     // ---------- UI (Screen Space - Camera, para aparecer nas capturas) ----------
