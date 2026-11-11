@@ -17,6 +17,7 @@ public class MenuTests
     {
         Preferencias.Prefixo = "teste.";
         Sessao.Modo = Modo.Terra;
+        Sessao.IntroVista = true;     // testes de jogo começam jogando (a intro tem os seus)
     }
 
     [TearDown]
@@ -25,6 +26,7 @@ public class MenuTests
         Preferencias.ApagarTudo();
         Preferencias.Prefixo = "";
         Sessao.Modo = Modo.Terra;
+        Sessao.IntroVista = true;     // testes de jogo começam jogando (a intro tem os seus)
         Physics2D.gravity = new Vector2(0, ModoJogo.GravidadeTerra);
         Time.timeScale = 1;
     }

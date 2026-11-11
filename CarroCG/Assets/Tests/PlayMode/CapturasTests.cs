@@ -13,6 +13,7 @@ public class CapturasTests
         Assume.That(!string.IsNullOrEmpty(Fotografo.Pasta), "defina CAPTURA_DIR");
         Preferencias.Prefixo = "teste.";
         Sessao.Modo = Modo.Terra;
+        Sessao.IntroVista = true;     // testes de jogo começam jogando (a intro tem os seus)
     }
 
     [TearDown]
@@ -21,6 +22,7 @@ public class CapturasTests
         Preferencias.ApagarTudo();
         Preferencias.Prefixo = "";
         Sessao.Modo = Modo.Terra;
+        Sessao.IntroVista = true;     // testes de jogo começam jogando (a intro tem os seus)
         Physics2D.gravity = new Vector2(0, ModoJogo.GravidadeTerra);
         Time.timeScale = 1;
     }
@@ -163,4 +165,22 @@ public class CapturasTests
         yield return new WaitForSeconds(0.5f);
         Fotografo.Foto("jogo-lago-aula.png");
     }
+
+    [UnityTest, Explicit]
+    public IEnumerator Intro()
+    {
+        Sessao.IntroVista = false;
+        yield return Carregar("Jogo");
+        yield return new WaitForSecondsRealtime(3);      // GPU em batch: compilar shaders trava os primeiros frames
+        Object.FindFirstObjectByType<IntroF1>().Comecar();
+        inicio = Time.realtimeSinceStartup;
+        foreach (var (t, nome) in new[] { (6f, "intro-wireframe.png"), (16f, "intro-lateral.png"), (22f, "intro-contorno.png"),
+                                          (30f, "intro-preenchimento.png"), (33.5f, "intro-crossfade.png") })
+        {
+            yield return new WaitForSecondsRealtime(t - Time.realtimeSinceStartup + inicio);
+            Fotografo.Foto(nome);
+        }
+    }
+
+    float inicio;
 }

@@ -65,8 +65,8 @@ public class ModoAula : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Tab)) DefinirAtivo(!Ativo);
-        if (Ativo && Input.GetKeyDown(KeyCode.F)) RepintarScanline();
+        if (!IntroF1.EmAndamento && Input.GetKeyDown(KeyCode.Tab)) DefinirAtivo(!Ativo);
+        if (Ativo && !IntroF1.EmAndamento && Input.GetKeyDown(KeyCode.F)) RepintarScanline();
         var texto = string.Format(Texto, terreno.modoSombreamento, parallax && !parallax.perspectiva ? "paralela" : "perspectiva");
         if (texto != textoNoRotulo) rotulo.text = textoNoRotulo = texto;
         if (Ativo)

@@ -21,16 +21,16 @@ public static class TecnicasCG
 
     public static readonly Tecnica[] Lista =
     {
-        T("Projeção paralela e perspectiva", Breve("F1 3D em wireframe na intro"), Sim("parallax do fundo (tecla P)")),
-        T("Rasterização", Breve("Bresenham: wireframe e contorno do F1 na intro"), Sim("Bresenham: minimapa")),
-        T("Preenchimento", Sim("scanline do terreno (tecla F no modo aula)"), Breve("regiões do F1 na intro"), Sim("sombra do F1")),
+        T("Projeção paralela e perspectiva", Sim("F1 3D em wireframe na intro"), Sim("parallax do fundo (tecla P)")),
+        T("Rasterização", Sim("Bresenham: wireframe e contorno do F1 na intro"), Sim("Bresenham: minimapa")),
+        T("Preenchimento", Sim("scanline do terreno (tecla F no modo aula)"), Sim("regiões do F1 na intro"), Sim("sombra do F1")),
         T("Curva de Bézier", Sim("terreno infinito de Bézier cúbicas")),
         T("Recorte", Sim("Sutherland-Hodgman: terreno contra a janela do trecho"),
                      Sim("Sutherland-Hodgman: reflexo no lago"), Sim("Cohen-Sutherland: minimapa")),
         T("Iluminação e sombreamento", Sim("Lambert Flat/Gouraud/Phong no terreno (tecla L)"), Sim("shader Phong do F1"),
                                        Sim("sombra projetada do F1")),
         T("Translação", Sim("movimento do carro"), Sim("moedas e galões sobre a curva"), Sim("parallax")),
-        T("Rotação", Sim("carro inclinando e rodas girando"), Sim("giro no ar"), Breve("wireframe 3D da intro")),
+        T("Rotação", Sim("carro inclinando e rodas girando"), Sim("giro no ar"), Sim("wireframe 3D da intro")),
         T("Espelhamento", Sim("emenda C1 do terreno (P1 = 2·P3 - P2)"), Sim("reflexo no lago (y' = 2h - y)")),
     };
 

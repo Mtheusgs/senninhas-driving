@@ -18,6 +18,7 @@ public class JogoTests
     {
         Preferencias.Prefixo = "teste.";
         Sessao.Modo = Modo.Terra;
+        Sessao.IntroVista = true;     // testes de jogo começam jogando (a intro tem os seus)
     }
 
     [TearDown]
@@ -26,6 +27,7 @@ public class JogoTests
         Preferencias.ApagarTudo();
         Preferencias.Prefixo = "";
         Sessao.Modo = Modo.Terra;
+        Sessao.IntroVista = true;     // testes de jogo começam jogando (a intro tem os seus)
         Physics2D.gravity = new Vector2(0, ModoJogo.GravidadeTerra);
         Time.timeScale = 1;
     }
@@ -350,7 +352,7 @@ public class JogoTests
     {
         yield return Carregar();
         foreach (var r in f1.transform.parent.GetComponentsInChildren<SpriteRenderer>())
-            if (r.name != "Feixe") Assert.AreEqual("CarroCG/F1Phong", r.sharedMaterial.shader.name, r.name);
+            if (r.name != "Feixe" && r.name != "Tela Intro") Assert.AreEqual("CarroCG/F1Phong", r.sharedMaterial.shader.name, r.name);
     }
 
     [UnityTest, Explicit]   // precisa de GPU: rodado por Tools/capturar.sh

@@ -6,6 +6,7 @@ public enum Modo { Terra, Lua }
 public static class Sessao
 {
     public static Modo Modo = Modo.Terra;
+    public static bool IntroVista;          // a intro passa uma vez por sessão (R e voltar do menu não repetem)
 }
 
 // Escolhas salvas do jogador. Os testes trocam o Prefixo para nunca mexer nas chaves reais.

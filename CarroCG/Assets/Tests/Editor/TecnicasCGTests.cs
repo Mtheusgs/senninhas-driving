@@ -32,6 +32,10 @@ public class TecnicasCGTests
         var texto = TecnicasCG.Texto();
         foreach (var t in TecnicasCG.Lista) StringAssert.Contains(t.nome, texto);
         StringAssert.Contains("no jogo", texto);
-        StringAssert.Contains("em breve", texto);
+        StringAssert.DoesNotContain("em breve", texto);
     }
+
+    [Test]
+    public void TodasAsTecnicas_EmTodosOsLugares_NoJogo() =>
+        Assert.IsTrue(TecnicasCG.Lista.All(t => t.lugares.All(l => l.noJogo)));
 }

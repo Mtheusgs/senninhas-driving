@@ -62,12 +62,40 @@ public static class MontarJogo
         aula.rotulo.enableAutoSizing = true;
         aula.rotulo.fontSizeMin = 16;
         aula.rotulo.fontSizeMax = 30;
+        CriarIntro(partida, canvas, f1, cam);
         MontagemComum.CriarEventSystem();
 
         Directory.CreateDirectory("Assets/Scenes");
         EditorSceneManager.SaveScene(cena, Cena);
         MontagemComum.DefinirBuild();
         Debug.Log("MontarJogo: cena salva em " + Cena);
+    }
+
+    // Intro: tela presa ao chassi (por cima do F1) e legenda num canvas próprio (o HUD some durante a intro).
+    static void CriarIntro(Partida partida, Canvas canvas, MontagemComum.PecasF1 f1, Camera cam)
+    {
+        var intro = new GameObject("Intro").AddComponent<IntroF1>();
+        intro.partida = partida;
+        intro.hud = canvas.gameObject.AddComponent<CanvasGroup>();
+        intro.camadas = f1.chassi.GetComponent<PhongF1>().pecas;
+        intro.segue = cam.GetComponent<CameraSegue>();
+        var tela = new GameObject("Tela Intro").AddComponent<SpriteRenderer>();
+        tela.transform.SetParent(f1.chassi.transform, false);
+        tela.sharedMaterial = MontagemComum.MaterialUnlit;
+        tela.sortingOrder = 8;
+        intro.tela = tela;
+        var canvasIntro = MontagemComum.CriarCanvas(cam);
+        canvasIntro.name = "UI Intro";
+        canvasIntro.sortingOrder = 110;
+        var caixa = MontagemComum.Caixa("Legenda", canvasIntro.transform, new Vector2(0.5f, 0), new Vector2(0, 70),
+                                        new Vector2(1100, 80), new Color(0, 0, 0, 0.6f));
+        intro.legenda = MontagemComum.Texto("Texto", caixa, Vector2.zero, Vector2.one, 38, TextAlignmentOptions.Center);
+        MontagemComum.Texto("Pular", canvasIntro.transform, new Vector2(1, 1), new Vector2(1, 1), 26, TextAlignmentOptions.TopRight)
+            .text = "Espaço: pular";
+        var pular = canvasIntro.transform.Find("Pular") as RectTransform;
+        pular.sizeDelta = new Vector2(300, 50);
+        pular.anchoredPosition = new Vector2(-180, -40);
+        intro.caixaLegenda = canvasIntro.gameObject;
     }
 
     static void MontarHud(Partida p, Transform raiz)
