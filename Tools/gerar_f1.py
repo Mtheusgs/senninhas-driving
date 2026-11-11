@@ -252,6 +252,46 @@ def pinheiros():
             d.polygon(s([(cx, topo), (cx + larg / 2, AF - base + 4), (cx - larg / 2, AF - base + 4)]), fill=(240, 244, 250, 255))
     return reduzir(img, LF, AF)
 
+def poligono_circulo(cx, cy, r, n=12):
+    return [(round(cx + r * math.cos(2 * math.pi * k / n), 1), round(cy + r * math.sin(2 * math.pi * k / n), 1)) for k in range(n)]
+
+# Regiões da intro (atrás → frente), mesmas formas da arte. Escritas como C# em Scripts/Jogo/ContornoF1.cs.
+def regioes_intro():
+    return [
+        ('PlacaTraseira', PLACA_TRASEIRA, VERMELHO),
+        ('AsaTraseira', [(50, 34), (178, 34), (178, 54), (50, 58)], PRETO),
+        ('AsaTraseira2', [(60, 66), (170, 64), (170, 78), (60, 80)], PRETO),
+        ('Assoalho', [(120, 200), (880, 200), (880, 214), (120, 214)], PRETO),
+        ('Chassi', CHASSI, VERMELHO),
+        ('Cobertura', COBERTURA, VERMELHO),
+        ('Cockpit', [(470, 118), (476, 100), (560, 100), (575, 118)], PRETO),
+        ('Capacete', poligono_circulo(515, 92, 26), AMARELO),
+        ('AsaDianteira', [(800, 212), (955, 208), (955, 222), (800, 224)], PRETO),
+        ('AsaDianteira2', [(820, 198), (950, 192), (950, 204), (820, 208)], PRETO),
+        ('PlacaDianteira', PLACA_DIANTEIRA, VERMELHO),
+        ('RodaTraseira', poligono_circulo(190, 178, RODA_R), PRETO),
+        ('RodaDianteira', poligono_circulo(770, 178, RODA_R), PRETO),
+    ]
+
+def contorno_cs(caminho):
+    rs = regioes_intro()
+    linhas = ['// GERADO por Tools/gerar_f1.py: não editar. Regiões do F1 para a intro (pixels da arte 960x300, y para baixo).',
+              'using UnityEngine;', '', 'public static class ContornoF1', '{']
+    for i, (nome, _, _) in enumerate(rs):
+        linhas.append(f'    public const int {nome} = {i};')
+    linhas.append('    public static readonly Vector2[][] Regioes =\n    {')
+    for _, pts, _ in rs:
+        linhas.append('        new Vector2[] { ' + ', '.join(f'new({x}f, {y}f)' for x, y in pts) + ' },')
+    linhas.append('    };')
+    linhas.append('    public static readonly Color32[] Cores =\n    {')
+    for _, _, c in rs:
+        linhas.append(f'        new({c[0]}, {c[1]}, {c[2]}, 255),')
+    linhas.append('    };')
+    linhas.append('    public static Vector2 EmUnidades(Vector2 px) => new((px.x - 480) / 256f, (150 - px.y) / 256f);')
+    linhas.append('}')
+    with open(caminho, 'w') as f:
+        f.write('\n'.join(linhas) + '\n')
+
 if __name__ == '__main__':
     raiz = sys.argv[1]
     f1, ceu = os.path.join(raiz, 'F1'), os.path.join(raiz, 'Ceu')
@@ -270,3 +310,6 @@ if __name__ == '__main__':
         caminho = os.path.join(pasta, nome + '.png')
         img.save(caminho)
         print(caminho)
+    cs = os.path.join(raiz, '..', 'Scripts', 'Jogo', 'ContornoF1.cs')
+    contorno_cs(cs)
+    print(cs)
