@@ -25,6 +25,7 @@ public static class MontarMenu
         var cam = MontagemComum.CriarCamera(f1.chassi.GetComponent<Rigidbody2D>(), 9, 12);
         cam.GetComponent<CameraSegue>().deslocamento = new Vector2(-8, 4);   // carro à direita, fora da coluna de botões
         var terreno = MontagemComum.CriarTerreno(f1.chassi.transform, chao);
+        terreno.cam = cam;
         var config = new GameObject("Configurar Partida").AddComponent<ConfigurarPartida>();
         config.terreno = terreno;
         config.f1 = f1.f1;

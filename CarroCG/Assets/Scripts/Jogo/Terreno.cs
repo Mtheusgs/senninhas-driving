@@ -25,6 +25,7 @@ public class Terreno : MonoBehaviour
     public float ppu = 64;
     public int amostras = 64;
     public int trechosAFrente = 3;
+    public Camera cam;                        // nunca descarta um trecho que a câmera ainda vê (menu: câmera afastada e à esquerda)
     public float profundidade = 18f;          // cobre a câmera no zoom máximo olhando para baixo
     public float fundoExtra = 4f;             // o polígono desce além da janela: o recorte sempre corta e o pedaço cortado aparece no modo aula
     public float amplitudeInicial = 2.5f, ganhoPorTrecho = 0.5f, amplitudeMax = 12f;
@@ -75,11 +76,14 @@ public class Terreno : MonoBehaviour
         }
     }
 
-    // Mantém trechos até trechosAFrente larguras à frente de x e descarta os que ficaram uma largura para trás.
+    // Mantém trechos até trechosAFrente larguras à frente de x e descarta os que ficaram uma largura para trás
+    // e já saíram da câmera.
     public void Atualizar(float x)
     {
         while (chunks.Count == 0 || chunks[^1].trecho.p3.x < x + trechosAFrente * Gerador.largura) GerarProximo();
-        while (chunks.Count > 1 && chunks[0].trecho.p3.x < x - Gerador.largura)
+        float limite = x - Gerador.largura;
+        if (cam) limite = Mathf.Min(limite, cam.ViewportToWorldPoint(Vector3.zero).x - 2);
+        while (chunks.Count > 1 && chunks[0].trecho.p3.x < limite)
         {
             Liberar(chunks[0]);
             chunks.RemoveAt(0);

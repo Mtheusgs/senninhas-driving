@@ -280,4 +280,20 @@ public class MenuTests
         Assert.AreEqual(0f, AudioListener.volume);
         StringAssert.Contains("0", menu.textoVolume.text);
     }
+
+    [UnityTest]
+    public IEnumerator Demo_TerrenoNaoSomeDentroDaCamera()
+    {
+        yield return Carregar("Menu");
+        var terreno = Object.FindFirstObjectByType<Terreno>();
+        var cam = Camera.main;
+        cam.GetComponent<CameraSegue>().enabled = false;
+        float carro = Object.FindFirstObjectByType<F1>().transform.position.x;
+        terreno.Atualizar(carro + 60);                         // carro bem à frente, câmera ficou para trás
+        cam.transform.position = new Vector3(carro + 30, cam.transform.position.y, cam.transform.position.z);
+        terreno.Atualizar(carro + 60);
+        float esquerda = cam.ViewportToWorldPoint(Vector3.zero).x;
+        Assert.LessOrEqual(terreno.chunks[0].trecho.p0.x, esquerda, "trecho visível descartado (corte no fundo do menu)");
+        yield return null;
+    }
 }

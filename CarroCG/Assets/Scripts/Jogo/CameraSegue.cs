@@ -23,7 +23,8 @@ public class CameraSegue : MonoBehaviour
     Vector3 vel;
     float velZoom;
 
-    float vyAnterior;
+    readonly float[] historico = new float[6];     // ~0,12 s de passos de física
+    int iHist;
 
     void Awake() => cam = GetComponent<Camera>();
     void OnEnable() => temBase = false;       // a intro move a câmera à mão: segue a partir de onde ela está
@@ -31,9 +32,16 @@ public class CameraSegue : MonoBehaviour
     void FixedUpdate()
     {
         if (!alvo) return;
+        // menor velocidade vertical dos últimos passos: a suspensão espalha a freada da aterrissagem por alguns passos
         float vy = alvo.linearVelocity.y;
-        if (vy - vyAnterior > limiarImpacto && vyAnterior < -limiarImpacto * 0.5f) Impacto?.Invoke(vy - vyAnterior);
-        vyAnterior = vy;
+        historico[iHist] = vy;
+        iHist = (iHist + 1) % historico.Length;
+        float menor = Mathf.Min(historico);
+        if (vy - menor > limiarImpacto && menor < -limiarImpacto * 0.5f)
+        {
+            Impacto?.Invoke(vy - menor);
+            for (int i = 0; i < historico.Length; i++) historico[i] = vy;     // um impacto por aterrissagem
+        }
     }
 
     void LateUpdate()
@@ -52,6 +60,8 @@ public class CameraSegue : MonoBehaviour
         var (destino, zoom) = Alvo();
         transform.position = basePos = destino;
         temBase = true;
+        System.Array.Clear(historico, 0, historico.Length);     // teleporte não é aterrissagem
+        Tremor = 0;
         cam.orthographicSize = zoom;
         vel = Vector3.zero;
         velZoom = 0;

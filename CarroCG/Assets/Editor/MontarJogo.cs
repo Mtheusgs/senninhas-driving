@@ -23,6 +23,7 @@ public static class MontarJogo
         var cam = MontagemComum.CriarCamera(f1.chassi.GetComponent<Rigidbody2D>(), 7, 11);
         var ceu = MontagemComum.CeuLunar(cam);
         var terreno = MontagemComum.CriarTerreno(f1.chassi.transform, chao);
+        terreno.cam = cam;
 
         var coletaveis = new GameObject("Coletaveis").AddComponent<Coletaveis>();
         coletaveis.terreno = terreno;
