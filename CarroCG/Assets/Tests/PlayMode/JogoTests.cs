@@ -732,4 +732,15 @@ public class JogoTests
         Assert.IsTrue(volume.profile.TryGet<ColorAdjustments>(out _));
         Assert.IsTrue(Camera.main.GetUniversalAdditionalCameraData().renderPostProcessing);
     }
+
+    [UnityTest]
+    public IEnumerator Tremor_SomeMesmoPausado()
+    {
+        yield return Carregar();
+        var segue = Object.FindFirstObjectByType<CameraSegue>();
+        segue.Tremer(20);
+        partida.AlternarPausa();
+        yield return new WaitForSecondsRealtime(0.6f);
+        Assert.AreEqual(0f, segue.Tremor, "câmera tremendo atrás do painel de pausa");
+    }
 }

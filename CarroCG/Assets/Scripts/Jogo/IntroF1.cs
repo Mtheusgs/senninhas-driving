@@ -12,6 +12,8 @@ public class IntroF1 : MonoBehaviour
     public SpriteRenderer tela;                 // a textura da intro, presa ao chassi
     public SpriteRenderer[] camadas;            // camadas HD do F1 (somem durante a intro)
     public CameraSegue segue;
+    public ModoAula aula;                       // "modo aula ao iniciar": linhas escondidas durante a intro
+    public GameObject sombra;                   // sombra do F1: escondida com as camadas
     public GameObject caixaLegenda;
     public TMP_Text legenda;
     public float duracao = 35f;
@@ -51,6 +53,8 @@ public class IntroF1 : MonoBehaviour
         partida.Congelar(true);
         hud.alpha = 0;
         Alfa(0);
+        if (aula) aula.DefinirAtivo(false);
+        if (sombra) sombra.SetActive(false);
         tela.enabled = true;
         tela.color = Color.white;
         caixaLegenda.SetActive(true);
@@ -98,7 +102,8 @@ public class IntroF1 : MonoBehaviour
         }, tempoReal: true);
 
         legenda.text = "Arte HD com iluminação Phong";
-        segue.enabled = true;                  // a câmera abre enquanto o desenho vira o sprite HD
+        partida.Congelar(false);               // tempo andando: a câmera abre enquanto o desenho vira o sprite HD
+        segue.enabled = true;
         yield return Anim.Durante(T(3), k =>
         {
             tela.color = new Color(1, 1, 1, 1 - k);
@@ -139,6 +144,8 @@ public class IntroF1 : MonoBehaviour
         tela.enabled = false;
         Alfa(1);
         hud.alpha = 1;
+        if (aula) aula.DefinirAtivo(Preferencias.ModoAula);
+        if (sombra) sombra.SetActive(true);
         caixaLegenda.SetActive(false);
         segue.enabled = true;
         partida.Congelar(false);

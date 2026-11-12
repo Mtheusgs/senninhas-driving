@@ -42,7 +42,7 @@ public class CameraSegue : MonoBehaviour
         if (!temBase) { basePos = transform.position; temBase = true; }
         basePos = Vector3.SmoothDamp(basePos, destino, ref vel, suavidade);
         transform.position = basePos + (Vector3)(Random.insideUnitCircle * Tremor);     // tremor por cima do seguir
-        Tremor = Mathf.MoveTowards(Tremor, 0, Time.deltaTime / 0.3f * 0.35f);
+        Tremor = Mathf.MoveTowards(Tremor, 0, Time.unscaledDeltaTime / 0.3f * 0.35f);     // some até com o jogo pausado
         cam.orthographicSize = Mathf.SmoothDamp(cam.orthographicSize, zoom, ref velZoom, suavidadeZoom);
     }
 

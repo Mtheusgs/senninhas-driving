@@ -36,7 +36,7 @@ public static class MontarJogo
         config.ceuLunar = ceu;
         var ciclo = MontagemComum.CriarCiclo(cam, terreno, luz, f1);
         config.ciclo = ciclo;
-        MontagemComum.CriarSombra(f1, terreno, ciclo);
+        var sombra = MontagemComum.CriarSombra(f1, terreno, ciclo);
         MontagemComum.CriarReflexo(f1, terreno);
         MontagemComum.CriarEfeitos(f1, cam, ciclo, terreno);
         var parallax = MontagemComum.CriarParallax(cam, ciclo);
@@ -63,7 +63,9 @@ public static class MontarJogo
         aula.rotulo.enableAutoSizing = true;
         aula.rotulo.fontSizeMin = 16;
         aula.rotulo.fontSizeMax = 30;
-        CriarIntro(partida, canvas, f1, cam);
+        var intro = CriarIntro(partida, canvas, f1, cam);
+        intro.aula = aula;
+        intro.sombra = sombra.gameObject;
         var som = new GameObject("Som").AddComponent<Som>();
         som.f1 = f1.f1;
         som.partida = partida;
@@ -77,7 +79,7 @@ public static class MontarJogo
     }
 
     // Intro: tela presa ao chassi (por cima do F1) e legenda num canvas próprio (o HUD some durante a intro).
-    static void CriarIntro(Partida partida, Canvas canvas, MontagemComum.PecasF1 f1, Camera cam)
+    static IntroF1 CriarIntro(Partida partida, Canvas canvas, MontagemComum.PecasF1 f1, Camera cam)
     {
         var intro = new GameObject("Intro").AddComponent<IntroF1>();
         intro.partida = partida;
@@ -101,6 +103,7 @@ public static class MontarJogo
         pular.sizeDelta = new Vector2(300, 50);
         pular.anchoredPosition = new Vector2(-180, -40);
         intro.caixaLegenda = canvasIntro.gameObject;
+        return intro;
     }
 
     static void MontarHud(Partida p, Transform raiz)

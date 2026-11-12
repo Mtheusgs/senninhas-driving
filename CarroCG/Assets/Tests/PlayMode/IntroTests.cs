@@ -84,4 +84,39 @@ public class IntroTests
         Assert.IsFalse(intro.Ativa);
         Assert.AreEqual(Partida.Estado.Jogando, Object.FindFirstObjectByType<Partida>().EstadoAtual);
     }
+
+    [UnityTest]
+    public IEnumerator ModoAulaAoIniciar_EscondidoNaIntro_VoltaDepois()
+    {
+        Preferencias.ModoAula = true;
+        yield return Carregar();
+        var aula = Object.FindFirstObjectByType<ModoAula>();
+        Assert.IsFalse(aula.Ativo, "linhas do modo aula por cima da intro");
+        Object.FindFirstObjectByType<IntroF1>().Pular();
+        yield return null;
+        Assert.IsTrue(aula.Ativo);
+    }
+
+    [UnityTest]
+    public IEnumerator SombraEscondidaNaIntro_VoltaDepois()
+    {
+        yield return Carregar();
+        var sombra = Object.FindFirstObjectByType<SombraF1>(FindObjectsInactive.Include);
+        Assert.IsFalse(sombra.gameObject.activeInHierarchy, "sombra sob o wireframe");
+        Object.FindFirstObjectByType<IntroF1>().Pular();
+        yield return null;
+        Assert.IsTrue(sombra.gameObject.activeInHierarchy);
+    }
+
+    [UnityTest]
+    public IEnumerator Crossfade_JogoJaDescongelado_CameraAbre()
+    {
+        yield return Carregar();
+        var intro = Object.FindFirstObjectByType<IntroF1>();
+        intro.duracao = 3.5f;          // crossfade de 0,3 s no fim
+        intro.Comecar();
+        while (!intro.legenda.text.Contains("HD")) yield return null;
+        yield return null;
+        Assert.AreEqual(1f, Time.timeScale, "câmera não abre com o tempo congelado");
+    }
 }
