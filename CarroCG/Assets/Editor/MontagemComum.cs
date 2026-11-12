@@ -70,7 +70,11 @@ public static class MontagemComum
                                     : caminho.EndsWith("sol.png") || caminho.EndsWith("lua.png") ? 40
                                     : caminho.EndsWith("ceu_gradiente.png") ? 16
                                     : caminho.EndsWith("feixe.png") ? 64 : 200;
-            if (caminho.Contains("/Fundo/")) imp.wrapMode = TextureWrapMode.Repeat;   // camadas repetidas (tiled)
+            if (caminho.Contains("/Fundo/"))       // camadas repetidas (tiled) só na horizontal: repetir em v puxa a base
+            {                                       // opaca para a borda de cima (linha escura no céu)
+                imp.wrapModeU = TextureWrapMode.Repeat;
+                imp.wrapModeV = TextureWrapMode.Clamp;
+            }
             if (caminho.Contains("/f1_") || caminho.Contains("/Fundo/"))   // UV 0-1 (normal map) / malha retangular (tiled)
             {
                 var s = new TextureImporterSettings();
