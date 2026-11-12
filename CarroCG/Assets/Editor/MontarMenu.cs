@@ -67,6 +67,8 @@ public static class MontarMenu
     {
         var t = MontagemComum.Texto("Titulo", pai, new Vector2(0.1f, 0.8f), new Vector2(0.9f, 0.95f), tamanho, TextAlignmentOptions.Center);
         t.text = texto;
+        t.font = MontagemComum.FonteItalica;
+        t.color = Dourado;
         return t;
     }
 
@@ -76,18 +78,20 @@ public static class MontarMenu
     static GameObject TelaPrincipal(Transform raiz, Menu menu)
     {
         var tela = MontagemComum.Painel("Principal", raiz, 0.25f);
-        var nome = MontagemComum.Texto("Nome", tela, new Vector2(0.05f, 0.72f), new Vector2(0.95f, 0.92f), 120, TextAlignmentOptions.Center);
-        nome.text = "Senninhas Driving";
-        nome.color = Dourado;
-        MontagemComum.Texto("Subtitulo", tela, new Vector2(0.1f, 0.66f), new Vector2(0.9f, 0.73f), 30, TextAlignmentOptions.Center)
+        var logo = MontagemComum.Icone(tela, "logo", new Vector2(0.5f, 1), new Vector2(0, -24), 0);
+        logo.rectTransform.sizeDelta = new Vector2(1150, 296);          // logo 1400x360 gerado pelo gerar_f1.py
+        logo.name = "Logo";
+        MontagemComum.Texto("Subtitulo", tela, new Vector2(0.1f, 0.655f), new Vector2(0.9f, 0.7f), 30, TextAlignmentOptions.Center)
                      .text = "Trabalho de Computação Gráfica";
-        var col = MontagemComum.Coluna(tela, new Vector2(0.5f, 0.34f), 520);
-        MontagemComum.Botao(col, "Jogar", menu.AbrirEscolhaModo);
+        var col = MontagemComum.Coluna(tela, new Vector2(0.5f, 0.33f), 520);
+        var (jogar, _) = MontagemComum.Botao(col, "Jogar", menu.AbrirEscolhaModo);
+        MontagemComum.Icone(jogar.transform, "icone_bandeira", new Vector2(0, 0.5f), new Vector2(18, 0), 54);
         MontagemComum.Botao(col, "Garagem", menu.AbrirGaragem);
         MontagemComum.Botao(col, "Controles", menu.AbrirControles);
         MontagemComum.Botao(col, "Configurações", menu.AbrirConfiguracoes);
         MontagemComum.Botao(col, "Técnicas de CG", menu.AbrirTecnicas);
-        MontagemComum.Botao(col, "Recorde", menu.AbrirRecorde);
+        var (recorde, _) = MontagemComum.Botao(col, "Recorde", menu.AbrirRecorde);
+        MontagemComum.Icone(recorde.transform, "icone_trofeu", new Vector2(0, 0.5f), new Vector2(18, 0), 50);
         MontagemComum.Botao(col, "Sair", menu.Sair);
         return tela.gameObject;
     }
@@ -188,11 +192,12 @@ public static class MontarMenu
     {
         var tela = MontagemComum.Painel("Tecnicas", raiz, 0.75f);
         Titulo(tela, "Técnicas de CG", 64);
-        var t = MontagemComum.Texto("Texto", tela, new Vector2(0.1f, 0.17f), new Vector2(0.9f, 0.8f), 26, TextAlignmentOptions.TopLeft);
-        t.fontStyle = FontStyles.Normal;
-        t.enableAutoSizing = true;
-        t.fontSizeMin = 14;
-        t.fontSizeMax = 26;
+        MontagemComum.Cartao(tela, new Vector2(1640, 720), 10);
+        // duas colunas: o texto que não cabe na esquerda continua na direita (TMP "Linked")
+        var t = MontagemComum.Texto("Texto", tela, new Vector2(0.09f, 0.18f), new Vector2(0.49f, 0.8f), 27, TextAlignmentOptions.TopLeft);
+        var t2 = MontagemComum.Texto("Texto 2", tela, new Vector2(0.52f, 0.18f), new Vector2(0.92f, 0.8f), 27, TextAlignmentOptions.TopLeft);
+        t.overflowMode = TextOverflowModes.Linked;
+        t.linkedTextComponent = t2;
         menu.textoTecnicas = t;
         Voltar(tela, menu, 0.08f);
         return tela.gameObject;

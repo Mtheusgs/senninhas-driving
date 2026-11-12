@@ -54,7 +54,9 @@ public class MenuTests
         yield return Carregar("Menu");
         Assert.AreEqual(menu.principal, menu.TelaAtual);
         Assert.IsFalse(menu.garagem.activeSelf);
-        Assert.IsTrue(Object.FindObjectsByType<TMP_Text>(FindObjectsSortMode.None).Any(t => t.text == "Senninhas Driving"));
+        var logo = GameObject.Find("Logo").GetComponent<UnityEngine.UI.Image>();     // o título virou o logo gerado
+        Assert.AreEqual("logo", logo.sprite.name);
+        Assert.IsTrue(logo.gameObject.activeInHierarchy);
     }
 
     [UnityTest]

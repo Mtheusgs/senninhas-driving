@@ -105,26 +105,36 @@ public static class MontarJogo
 
     static void MontarHud(Partida p, Transform raiz)
     {
-        var fundoBarra = MontagemComum.Caixa("Combustivel", raiz, new Vector2(0, 1), new Vector2(40, -40), new Vector2(420, 34), new Color(0, 0, 0, 0.55f));
-        // trilho com a margem; a barra dentro dele não tem margem, então com 0% fica com largura 0 (sem lasca)
-        var trilho = new GameObject("Trilho", typeof(RectTransform)).GetComponent<RectTransform>();
-        trilho.SetParent(fundoBarra, false);
-        trilho.anchorMin = Vector2.zero;
-        trilho.anchorMax = Vector2.one;
-        trilho.offsetMin = new Vector2(4, 4);
-        trilho.offsetMax = new Vector2(-4, -4);
-        var barra = MontagemComum.Caixa("Nivel", trilho, Vector2.zero, Vector2.zero, Vector2.zero, new Color(1f, 0.55f, 0.1f));
+        var escuro = new Color(0.04f, 0.06f, 0.1f, 0.6f);
+        // Combustível: ícone do galão + barra arredondada que muda de cor (verde → amarelo → vermelho)
+        var comb = MontagemComum.Caixa("Combustivel", raiz, new Vector2(0, 1), new Vector2(32, -28), new Vector2(480, 76), escuro);
+        MontagemComum.Icone(comb, "icone_galao", new Vector2(0, 0.5f), new Vector2(14, 0), 58);
+        var trilho = MontagemComum.Caixa("Trilho", comb, new Vector2(0, 0.5f), new Vector2(84, 0), new Vector2(380, 34), new Color(0, 0, 0, 0.55f));
+        var area = new GameObject("Area", typeof(RectTransform)).GetComponent<RectTransform>();
+        area.SetParent(trilho, false);
+        area.anchorMin = Vector2.zero;
+        area.anchorMax = Vector2.one;
+        area.offsetMin = new Vector2(4, 4);       // a barra dentro da área não tem margem: com 0% fica com largura 0
+        area.offsetMax = new Vector2(-4, -4);
+        var barra = MontagemComum.Caixa("Nivel", area, Vector2.zero, Vector2.zero, Vector2.zero, Partida.BarraCor(1));
         barra.anchorMin = Vector2.zero;
         barra.anchorMax = Vector2.one;
         barra.offsetMin = barra.offsetMax = Vector2.zero;
         p.barraCombustivel = barra;
 
-        var caixaMoedas = MontagemComum.Caixa("Moedas", raiz, new Vector2(0, 1), new Vector2(40, -90), new Vector2(260, 56), new Color(0, 0, 0, 0.45f));
-        p.textoMoedas = MontagemComum.Texto("Texto", caixaMoedas, Vector2.zero, Vector2.one, 34, TextAlignmentOptions.Center);
+        // Moedas: ícone + número grande
+        var moedas = MontagemComum.Caixa("Moedas", raiz, new Vector2(0, 1), new Vector2(32, -114), new Vector2(220, 76), escuro);
+        MontagemComum.Icone(moedas, "icone_moeda", new Vector2(0, 0.5f), new Vector2(12, 0), 58);
+        p.textoMoedas = MontagemComum.Texto("Texto", moedas, new Vector2(0.38f, 0), new Vector2(0.95f, 1), 48, TextAlignmentOptions.Left);
 
-        var caixaDist = MontagemComum.Caixa("Distancia", raiz, new Vector2(0.5f, 1), new Vector2(0, -30), new Vector2(380, 120), new Color(0, 0, 0, 0.45f));
-        p.textoDistancia = MontagemComum.Texto("Metros", caixaDist, new Vector2(0, 0.35f), Vector2.one, 60, TextAlignmentOptions.Center);
-        p.textoRecorde = MontagemComum.Texto("Recorde", caixaDist, Vector2.zero, new Vector2(1, 0.4f), 26, TextAlignmentOptions.Center);
+        // Distância: bandeira + metros em itálico; recorde com troféu embaixo
+        var dist = MontagemComum.Caixa("Distancia", raiz, new Vector2(0.5f, 1), new Vector2(0, -24), new Vector2(440, 136), escuro);
+        MontagemComum.Icone(dist, "icone_bandeira", new Vector2(0, 1), new Vector2(18, -12), 64);
+        p.textoDistancia = MontagemComum.Texto("Metros", dist, new Vector2(0.18f, 0.38f), new Vector2(1, 1), 70, TextAlignmentOptions.Center);
+        p.textoDistancia.font = MontagemComum.FonteItalica;
+        MontagemComum.Icone(dist, "icone_trofeu", new Vector2(0.5f, 0), new Vector2(-120, 10), 36);
+        p.textoRecorde = MontagemComum.Texto("Recorde", dist, new Vector2(0.1f, 0.02f), new Vector2(0.95f, 0.36f), 28, TextAlignmentOptions.Center);
+        p.textoRecorde.color = new Color(1f, 0.85f, 0.4f);
 
         var aviso = MontagemComum.Caixa("Sem gasolina", raiz, new Vector2(0.5f, 1), new Vector2(0, -165), new Vector2(440, 64), new Color(0.75f, 0.1f, 0.1f, 0.85f));
         aviso.gameObject.AddComponent<CanvasGroup>();
@@ -135,6 +145,7 @@ public static class MontarJogo
         p.textoAviso = MontagemComum.Texto("Texto", caixaAviso, Vector2.zero, Vector2.one, 34, TextAlignmentOptions.Center);
 
         var pausa = MontagemComum.Painel("Pausa", raiz);
+        MontagemComum.Cartao(pausa, new Vector2(680, 640), 20);
         MontagemComum.Texto("Titulo", pausa, new Vector2(0.2f, 0.62f), new Vector2(0.8f, 0.82f), 96, TextAlignmentOptions.Center).text = "PAUSADO";
         var colPausa = MontagemComum.Coluna(pausa, new Vector2(0.5f, 0.42f), 480);
         MontagemComum.Botao(colPausa, "Continuar", p.AlternarPausa);
@@ -143,7 +154,9 @@ public static class MontarJogo
         p.painelPausa = pausa.gameObject;
 
         var fim = MontagemComum.Painel("Fim", raiz);
-        p.textoFim = MontagemComum.Texto("Texto", fim, new Vector2(0.15f, 0.5f), new Vector2(0.85f, 0.85f), 84, TextAlignmentOptions.Center);
+        MontagemComum.Cartao(fim, new Vector2(900, 720), 20);
+        MontagemComum.Icone(fim, "icone_bandeira", new Vector2(0.5f, 0.5f), new Vector2(0, 322), 96);
+        p.textoFim = MontagemComum.Texto("Texto", fim, new Vector2(0.15f, 0.42f), new Vector2(0.85f, 0.76f), 84, TextAlignmentOptions.Center);
         var colFim = MontagemComum.Coluna(fim, new Vector2(0.5f, 0.32f), 480);
         MontagemComum.Botao(colFim, "Jogar de novo", p.Reiniciar);
         MontagemComum.Botao(colFim, "Menu", p.IrParaMenu);

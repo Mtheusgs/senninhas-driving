@@ -42,6 +42,7 @@ public static class MontagemComum
     public static void ConfigurarArte()
     {
         AssetDatabase.Refresh();
+        ConfigurarUI();
         foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/F1", "Assets/Art/Ceu", "Assets/Art/Fundo" }))
         {
             var caminho = AssetDatabase.GUIDToAssetPath(guid);
@@ -79,6 +80,58 @@ public static class MontagemComum
             }
             imp.SaveAndReimport();
         }
+    }
+
+    // Interface: sprites 9-slice (painel, botão), ícones e logo; fontes Ubuntu como TMP dinâmicas.
+    static void ConfigurarUI()
+    {
+        foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/UI" }))
+        {
+            var caminho = AssetDatabase.GUIDToAssetPath(guid);
+            if (!caminho.EndsWith(".png")) continue;          // o atlas das fontes também é Texture2D
+            var imp = (TextureImporter)AssetImporter.GetAtPath(caminho);
+            imp.textureType = TextureImporterType.Sprite;
+            imp.spriteImportMode = SpriteImportMode.Single;
+            imp.filterMode = FilterMode.Bilinear;
+            imp.mipmapEnabled = false;
+            imp.alphaIsTransparency = true;
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            imp.spritePixelsPerUnit = 100;
+            imp.spriteBorder = caminho.EndsWith("painel.png") ? new Vector4(18, 18, 18, 18)
+                             : caminho.EndsWith("botao.png") ? new Vector4(22, 22, 22, 22) : Vector4.zero;
+            var s = new TextureImporterSettings();
+            imp.ReadTextureSettings(s);
+            s.spriteMeshType = SpriteMeshType.FullRect;
+            imp.SetTextureSettings(s);
+            imp.SaveAndReimport();
+        }
+    }
+
+    public static Sprite SpriteUI(string nome) => CarregarSprite($"Assets/Art/UI/{nome}.png");
+
+    static TMP_FontAsset fonte, fonteItalica;
+    public static TMP_FontAsset Fonte => fonte ? fonte : fonte = CriarFonte("Ubuntu-B");
+    public static TMP_FontAsset FonteItalica => fonteItalica ? fonteItalica : fonteItalica = CriarFonte("Ubuntu-BI");
+
+    static TMP_FontAsset CriarFonte(string ttf)
+    {
+        string caminho = $"Assets/Art/UI/{ttf} SDF.asset";
+        var fa = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(caminho);
+        if (fa) return fa;
+        var font = AssetDatabase.LoadAssetAtPath<Font>($"Assets/Art/UI/{ttf}.ttf");
+        fa = TMP_FontAsset.CreateFontAsset(font, 90, 9, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024,
+                                           AtlasPopulationMode.Dynamic, true);
+        fa.name = ttf + " SDF";
+        AssetDatabase.CreateAsset(fa, caminho);
+        fa.atlasTextures[0].name = ttf + " Atlas";
+        AssetDatabase.AddObjectToAsset(fa.atlasTextures[0], fa);
+        fa.material.name = ttf + " Material";
+        AssetDatabase.AddObjectToAsset(fa.material, fa);
+        fa.TryAddCharacters(" !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
+                            "ÁÂÃÀÉÊÍÓÔÕÚÇáâãàéêíóôõúç·°ªº", out _);
+        EditorUtility.SetDirty(fa);
+        AssetDatabase.SaveAssets();
+        return fa;
     }
 
     // Material salvo em Assets/Materiais (recriado com os valores atuais a cada montagem).
@@ -469,7 +522,10 @@ public static class MontagemComum
         rt.anchorMin = rt.anchorMax = rt.pivot = ancora;
         rt.anchoredPosition = pos;
         rt.sizeDelta = tamanho;
-        go.GetComponent<Image>().color = cor;
+        var img = go.GetComponent<Image>();
+        img.color = cor;
+        img.sprite = SpriteUI("painel");             // cantos arredondados (9-slice)
+        img.type = Image.Type.Sliced;
         return rt;
     }
 
@@ -483,9 +539,10 @@ public static class MontagemComum
         rt.anchorMax = ancoraMax;
         rt.offsetMin = rt.offsetMax = Vector2.zero;
         var t = go.AddComponent<TextMeshProUGUI>();
+        t.font = Fonte;                               // Ubuntu Bold (já é negrito: sem negrito falso)
         t.fontSize = tamanho;
         t.alignment = alinhamento;
-        t.fontStyle = FontStyles.Bold;
+        t.fontStyle = FontStyles.Normal;
         t.color = Color.white;
         return t;
     }
@@ -497,7 +554,27 @@ public static class MontagemComum
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
         rt.offsetMin = rt.offsetMax = Vector2.zero;
+        rt.GetComponent<Image>().sprite = null;      // tela cheia: retângulo comum
         return rt;
+    }
+
+    // Cartão arredondado no centro de um painel (pausa, fim, telas do menu).
+    public static RectTransform Cartao(Transform pai, Vector2 tamanho, float y = 0) =>
+        Caixa("Cartao", pai, new Vector2(0.5f, 0.5f), new Vector2(0, y), tamanho, new Color(0.06f, 0.08f, 0.12f, 0.88f));
+
+    public static Image Icone(Transform pai, string nome, Vector2 ancora, Vector2 pos, float tamanho)
+    {
+        var go = new GameObject("Icone " + nome, typeof(RectTransform), typeof(Image));
+        var rt = (RectTransform)go.transform;
+        rt.SetParent(pai, false);
+        rt.anchorMin = rt.anchorMax = rt.pivot = ancora;
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = new Vector2(tamanho, tamanho);
+        var img = go.GetComponent<Image>();
+        img.sprite = SpriteUI(nome);
+        img.preserveAspect = true;
+        img.raycastTarget = false;
+        return img;
     }
 
     // Coluna de botões empilhados, centrada em 'ancora'.
@@ -536,14 +613,18 @@ public static class MontagemComum
     {
         var go = new GameObject(texto, typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
         go.transform.SetParent(pai, false);
-        go.GetComponent<LayoutElement>().preferredHeight = 70;
+        go.GetComponent<LayoutElement>().preferredHeight = 78;
+        var img = go.GetComponent<Image>();
+        img.sprite = SpriteUI("botao");
+        img.type = Image.Type.Sliced;
         var botao = go.GetComponent<Button>();
         var cores = botao.colors;
-        cores.normalColor = new Color(0.08f, 0.1f, 0.14f, 0.88f);
+        cores.normalColor = new Color(0.12f, 0.15f, 0.22f, 0.92f);
         cores.highlightedColor = cores.selectedColor = new Color(1f, 0.55f, 0.1f, 1f);   // teclado: selecionado em laranja
         cores.pressedColor = new Color(0.8f, 0.4f, 0.05f, 1f);
+        cores.fadeDuration = 0.08f;
         botao.colors = cores;
-        var t = Texto("Texto", go.transform, Vector2.zero, Vector2.one, 36, TextAlignmentOptions.Center);
+        var t = Texto("Texto", go.transform, Vector2.zero, Vector2.one, 38, TextAlignmentOptions.Center);
         t.text = texto;
         return (botao, t);
     }

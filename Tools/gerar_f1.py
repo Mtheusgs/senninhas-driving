@@ -301,6 +301,81 @@ def contorno_cs(caminho):
     with open(caminho, 'w') as f:
         f.write('\n'.join(linhas) + '\n')
 
+# ---------- Interface: painéis e botões arredondados (9-slice), ícones e logo ----------
+FONTE_UI = '/usr/share/fonts/truetype/ubuntu/Ubuntu-BI.ttf'
+
+def arredondado(n, raio, preenchimento, borda=None, largura_borda=0):
+    img = Image.new('RGBA', (n * S, n * S))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, n * S - 1, n * S - 1], raio * S, fill=preenchimento,
+                        outline=borda, width=largura_borda * S)
+    return reduzir(img, n, n)
+
+def painel(): return arredondado(64, 16, (200, 200, 200, 255), (255, 255, 255, 255), 3)
+
+def botao():
+    img = arredondado(64, 20, (255, 255, 255, 255))
+    px = img.load()
+    for y in range(64):                       # leve degradê: o botão parece ter volume
+        for x in range(64):
+            r, g, b, a = px[x, y]
+            k = 1 - 0.18 * y / 63
+            px[x, y] = (int(r * k), int(g * k), int(b * k), a)
+    return img
+
+def icone_galao(): return galao().resize((128, 128), Image.LANCZOS) if galao().size != (128, 128) else galao()
+def icone_moeda(): return moeda().resize((128, 128), Image.LANCZOS)
+
+def icone_bandeira():
+    n = 128
+    img = Image.new('RGBA', (n * S, n * S))
+    d = ImageDraw.Draw(img)
+    d.rectangle(s([(18, 10), (26, 120)]), fill=(230, 230, 235, 255))                 # mastro
+    cel = 16
+    for i in range(6):
+        for j in range(4):
+            x0, y0 = 26 + i * cel, 12 + j * cel
+            onda = 4 * math.sin(i * 0.9)
+            cor = PRETO if (i + j) % 2 else BRANCO
+            d.polygon(s([(x0, y0 + onda), (x0 + cel, y0 + onda), (x0 + cel, y0 + cel + onda), (x0, y0 + cel + onda)]), fill=cor)
+    return reduzir(img, n, n)
+
+def icone_trofeu():
+    n = 128
+    img = Image.new('RGBA', (n * S, n * S))
+    d = ImageDraw.Draw(img)
+    d.ellipse(s([(8, 22), (40, 62)]), outline=OURO, width=8 * S)                      # alças
+    d.ellipse(s([(88, 22), (120, 62)]), outline=OURO, width=8 * S)
+    d.polygon(s([(28, 14), (100, 14), (92, 60), (76, 78), (52, 78), (36, 60)]), fill=OURO)   # taça
+    d.rectangle(s([(56, 76), (72, 100)]), fill=OURO_ESC)
+    d.rounded_rectangle(s([(36, 98), (92, 116)]), 4 * S, fill=OURO_ESC)
+    d.polygon(s([(44, 20), (54, 20), (50, 56), (44, 52)]), fill=(255, 236, 150, 255))  # brilho
+    return reduzir(img, n, n)
+
+def logo(corpo_f1, roda_f1):
+    w, h = 1400, 360
+    img = Image.new('RGBA', (w, h))
+    d = ImageDraw.Draw(img)
+    f = ImageFont.truetype(FONTE_UI, 150) if os.path.exists(FONTE_UI) else ImageFont.load_default(size=150)
+    for dx, dy, cor in ((10, 10, (0, 0, 0, 150)), (0, 0, (255, 204, 51, 255))):
+        d.text((w // 2 + dx, 120 + dy), 'SENNINHAS', font=f, fill=cor, anchor='mm')
+    f2 = ImageFont.truetype(FONTE_UI, 92) if os.path.exists(FONTE_UI) else ImageFont.load_default(size=92)
+    d.text((w // 2 + 6, 236 + 6), 'DRIVING', font=f2, fill=(0, 0, 0, 150), anchor='mm')
+    d.text((w // 2, 236), 'DRIVING', font=f2, fill=(255, 255, 255, 255), anchor='mm')
+    cel = 22                                                                              # faixa quadriculada
+    for i in range(w // cel):
+        for j in range(2):
+            if (i + j) % 2 == 0:
+                d.rectangle([i * cel, 300 + j * cel, (i + 1) * cel - 1, 300 + (j + 1) * cel - 1], fill=(255, 255, 255, 230))
+            else:
+                d.rectangle([i * cel, 300 + j * cel, (i + 1) * cel - 1, 300 + (j + 1) * cel - 1], fill=(20, 20, 24, 230))
+    carro = corpo_f1.copy()
+    for cx in (190, 770):
+        carro.alpha_composite(roda_f1, (cx - RODA_R, 178 - RODA_R))
+    carro = carro.resize((330, 103), Image.LANCZOS)
+    img.alpha_composite(carro, (w - 360, 176))
+    return img
+
 if __name__ == '__main__':
     raiz = sys.argv[1]
     f1, ceu = os.path.join(raiz, 'F1'), os.path.join(raiz, 'Ceu')
@@ -319,6 +394,12 @@ if __name__ == '__main__':
         caminho = os.path.join(pasta, nome + '.png')
         img.save(caminho)
         print(caminho)
+    ui = os.path.join(raiz, 'UI')
+    os.makedirs(ui, exist_ok=True)
+    for nome, img in (('painel', painel()), ('botao', botao()), ('icone_galao', icone_galao()), ('icone_moeda', icone_moeda()),
+                      ('icone_bandeira', icone_bandeira()), ('icone_trofeu', icone_trofeu()), ('logo', logo(saidas[3][2], saidas[4][2]))):
+        img.save(os.path.join(ui, nome + '.png'))
+        print(os.path.join(ui, nome + '.png'))
     cs = os.path.join(raiz, '..', 'Scripts', 'Jogo', 'ContornoF1.cs')
     contorno_cs(cs)
     print(cs)

@@ -156,12 +156,20 @@ public class Partida : MonoBehaviour
         if (botao && EventSystem.current) EventSystem.current.SetSelectedGameObject(botao.gameObject);
     }
 
+    // Barra de combustível: verde cheia, amarela na metade, vermelha vazia.
+    public static Color BarraCor(float fracao)
+    {
+        Color verde = new(0.3f, 0.85f, 0.35f), amarelo = new(1f, 0.85f, 0.15f), vermelho = new(0.92f, 0.18f, 0.12f);
+        return fracao >= 0.5f ? Color.Lerp(amarelo, verde, (fracao - 0.5f) * 2) : Color.Lerp(vermelho, amarelo, fracao * 2);
+    }
+
     void AtualizarHud()
     {
         var a = barraCombustivel.anchorMax;
         a.x = combustivel.Fracao;
         barraCombustivel.anchorMax = a;
-        textoMoedas.text = $"Moedas  {Moedas}";
+        if (barraCombustivel.TryGetComponent(out UnityEngine.UI.Image img)) img.color = BarraCor(combustivel.Fracao);
+        textoMoedas.text = $"{Moedas}";
         textoDistancia.text = $"{Distancia:0} m";
         textoRecorde.text = $"Recorde {Preferencias.Recorde(Sessao.Modo):0} m";
         bool semGasolina = combustivel.Vazio && EstadoAtual == Estado.Jogando;     // no embalo: avisa piscando
